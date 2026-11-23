@@ -1,0 +1,100 @@
+import { Model, Credit } from "../model.slint";
+import { Theme } from "../theme.slint";
+import { Card, Badge, Divider } from "../widgets/card.slint";
+import { Btn } from "../widgets/button.slint";
+import { Icon } from "../widgets/icon.slint";
+import { ScrollArea } from "../widgets/scroll.slint";
+import { PageFrame } from "../widgets/page.slint";
+import { LogoMark, Wordmark } from "../widgets/logo.slint";
+import { AboutSlint, Palette } from "std-widgets.slint";
+
+component CreditItem inherits Rectangle {
+    in property <Credit> credit;
+    height: 60px;
+    accessible-role: AccessibleRole.text;
+    accessible-label: root.credit.name + ", " + root.credit.license + ". " + root.credit.detail;
+    HorizontalLayout {
+        padding-left: 18px;
+        padding-right: 18px;
+        spacing: 12px;
+        VerticalLayout {
+            horizontal-stretch: 1;
+            alignment: center;
+            spacing: 2px;
+            Text { text: root.credit.name; color: Theme.text; font-size: Theme.fs-body + 1px; font-weight: 600; overflow: elide; }
+            Text { text: root.credit.detail; color: Theme.text-2; font-size: Theme.fs-small; overflow: elide; }
+        }
+        Rectangle {
+            horizontal-stretch: 0;
+            preferred-width: lic.preferred-width;
+            lic := Badge { y: (parent.height - self.height) / 2; text: root.credit.license; }
+        }
+    }
+}
+
+export component AboutPage inherits Rectangle {
+    PageFrame {
+        max-content: 640px;
+        ScrollArea {
+            VerticalLayout {
+                padding-top: 32px;
+                padding-bottom: 28px;
+                padding-right: 14px;
+                spacing: 22px;
+                VerticalLayout {
+                    spacing: 12px;
+                    alignment: start;
+                    Rectangle { height: 88px; LogoMark { size: 88px; x: (parent.width - self.width) / 2; } }
+                    Rectangle { height: 36px; Wordmark { size: 30px; x: (parent.width - self.preferred-width) / 2; width: self.preferred-width; } }
+                    Text {
+                        text: "Version " + Model.version + " on " + Model.platform;
+                        color: Theme.text-2;
+                        font-size: Theme.fs-body;
+                        horizontal-alignment: center;
+                    }
+                    Text {
+                        text: "A system-wide equalizer for Windows, Linux and macOS. Free and open source.";
+                        color: Theme.text;
+                        font-size: Theme.fs-lead;
+                        horizontal-alignment: center;
+                        wrap: word-wrap;
+                    }
+                    Rectangle {
+                        height: 40px;
+                        HorizontalLayout {
+                            alignment: center;
+                            spacing: 8px;
+                            Btn { text: "View on GitHub"; icon: "external"; kind: "primary"; clicked => { Model.open-link("https://github.com/AdityaTummuri/EQaura"); } }
+                            Btn { text: "Report a problem"; icon: "external"; clicked => { Model.open-link("https://github.com/AdityaTummuri/EQaura/issues"); } }
+                        }
+                    }
+                }
+                Card {
+                    preferred-height: cl.preferred-height;
+                    cl := VerticalLayout {
+                        VerticalLayout {
+                            padding: 18px;
+                            padding-bottom: 12px;
+                            spacing: 2px;
+                            Text { text: "Credits and licenses"; color: Theme.text; font-size: Theme.fs-lead; font-weight: 600; }
+                            Text { text: "EQaura stands on the work of these projects and people."; color: Theme.text-2; font-size: Theme.fs-body; wrap: word-wrap; }
+                        }
+                        for c[i] in Model.credits: VerticalLayout {
+                            Divider { }
+                            CreditItem { credit: c; }
+                        }
+                    }
+                }
+                // The Slint logo needs a light or dark backdrop that matches the system scheme.
+                Rectangle {
+                    height: 96px;
+                    border-radius: Theme.r-lg;
+                    background: Palette.color-scheme == ColorScheme.dark ? #1B1B1B : #F4F4F4;
+                    border-width: 1px;
+                    border-color: Theme.line;
+                    AboutSlint { }
+                }
+            }
+        }
+    }
+}

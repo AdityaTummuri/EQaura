@@ -1,0 +1,82 @@
+import { Theme } from "../theme.slint";
+import { Icon } from "icon.slint";
+import { FocusRing } from "focus.slint";
+
+// A row of mutually exclusive options.
+export component Segmented inherits Rectangle {
+    in property <[string]> options;
+    in property <[string]> icons;
+    in property <int> current;
+    in property <bool> enabled: true;
+    in property <bool> compact: false;
+    in property <string> label;
+    callback selected(int);
+
+    horizontal-stretch: 0;
+    height: root.compact ? 30px : 34px;
+    min-width: lay.min-width + 4px;
+    preferred-width: lay.preferred-width + 4px;
+    border-radius: Theme.r-md;
+    border-width: 1px;
+    border-color: Theme.line;
+    background: Theme.dark ? Theme.sunken : Theme.surface-3;
+    accessible-role: tab-list;
+    accessible-label: root.label;
+
+    lay := HorizontalLayout {
+        padding: 2px;
+        spacing: 2px;
+        for opt[i] in root.options: Rectangle {
+            private property <bool> on: i == root.current;
+            min-width: row.min-width + 24px;
+            preferred-width: row.preferred-width + 24px;
+            border-radius: Theme.r-sm;
+            background: on ? (Theme.dark ? Theme.surface-3 : Theme.surface)
+                : ia.pressed ? Theme.surface-3.with-alpha(0.7) : ia.has-hover && root.enabled ? Theme.surface-3.with-alpha(0.45) : transparent;
+            border-width: on && !Theme.dark ? 1px : 0px;
+            border-color: Theme.line;
+            animate background { duration: Theme.dur-fast; easing: ease-out; }
+            accessible-role: tab;
+            accessible-label: opt;
+            accessible-checkable: true;
+            accessible-checked: on;
+            accessible-action-default => { if (root.enabled) { root.selected(i); } }
+
+            row := HorizontalLayout {
+                alignment: center;
+                spacing: 6px;
+                padding-left: 8px;
+                padding-right: 8px;
+                if root.icons.length > i && root.icons[i] != "": Icon {
+                    name: root.icons[i];
+                    size: 16px;
+                    tint: on ? Theme.accent : Theme.text-2;
+                    y: (parent.height - self.height) / 2;
+                }
+                Text {
+                    text: opt;
+                    font-size: Theme.fs-body;
+                    font-weight: on ? 600 : 500;
+                    color: !root.enabled ? Theme.text-3 : on ? Theme.text : Theme.text-2;
+                    vertical-alignment: center;
+                    horizontal-alignment: center;
+                }
+            }
+            ia := TouchArea {
+                enabled: root.enabled;
+                mouse-cursor: pointer;
+                clicked => { root.selected(i); }
+            }
+        }
+    }
+    FocusRing { show: fs.has-focus; radius: Theme.r-md; }
+    fs := FocusScope {
+        enabled: root.enabled;
+        focus-on-click: false;
+        key-pressed(e) => {
+            if (e.text == Key.LeftArrow && root.current > 0) { root.selected(root.current - 1); return accept; }
+            if (e.text == Key.RightArrow && root.current < root.options.length - 1) { root.selected(root.current + 1); return accept; }
+            return reject;
+        }
+    }
+}

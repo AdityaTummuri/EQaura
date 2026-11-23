@@ -1,0 +1,151 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: never
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Linux libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev libfontconfig1-dev libxkbcommon-dev
+      - name: Formatting
+        if: runner.os == 'Linux'
+        run: |
+          cargo fmt --all
+          git diff > fmt.patch
+          if [ -s fmt.patch ]; then echo "::warning::Not formatted. Apply the fmt-patch artifact."; fi
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux'
+        with:
+          name: fmt-patch
+          path: fmt.patch
+      - name: Lints
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Tests
+        run: cargo test --workspace --locked
+      - name: Property tests, full size
+        if: runner.os == 'Linux'
+        run: cargo test --release --locked -p eq-core -p eq-ai
+
+  pipewire:
+    # Loads the generated settings into a real PipeWire. No sound hardware is
+    # involved.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: sudo apt-get update && sudo apt-get install -y pipewire pipewire-bin wireplumber dbus
+      - name: Run the equalizer inside PipeWire
+        run: bash tools/pipewire_test.sh
+
+  package:
+    needs: [test, pipewire]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Version
+        id: v
+        shell: bash
+        run: echo "version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)" >> "$GITHUB_OUTPUT"
+      - name: Linux libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev libfontconfig1-dev libxkbcommon-dev rpm
+      - name: Licenses
+        shell: bash
+        run: |
+          PY=$(command -v python3 || command -v python)
+          "$PY" tools/third_party.py dist/THIRD-PARTY-LICENSES.txt
+
+      - name: Build for Linux
+        if: runner.os == 'Linux'
+        run: |
+          cargo build --release --locked -p eqaura
+          installer/linux/package.sh ${{ steps.v.outputs.version }}
+
+      - name: Build for macOS
+        if: runner.os == 'macOS'
+        run: |
+          rustup target add x86_64-apple-darwin aarch64-apple-darwin
+          export MACOSX_DEPLOYMENT_TARGET=14.2
+          cargo build --release --locked -p eqaura --target aarch64-apple-darwin
+          cargo build --release --locked -p eqaura --target x86_64-apple-darwin
+          lipo -create -output target/eqaura-universal target/{aarch64,x86_64}-apple-darwin/release/eqaura
+          installer/macos/package.sh ${{ steps.v.outputs.version }} target/eqaura-universal
+
+      - name: Build for Windows
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          cargo build --release --locked -p eqaura -p eqaura-agent
+          mkdir -p dist/windows
+          cp target/release/eqaura.exe target/release/eqaura-agent.exe dist/windows/
+          cp LICENSE dist/windows/LICENSE.txt
+          cp dist/THIRD-PARTY-LICENSES.txt dist/windows/
+          cp installer/windows/EqualizerAPO-LICENSE.txt dist/windows/
+          base=https://downloads.sourceforge.net/project/equalizerapo/1.4.2
+          curl -fsSL --retry 5 -o dist/windows/EqualizerAPO64.exe $base/EqualizerAPO-x64-1.4.2.exe
+          curl -fsSL --retry 5 -o dist/EqualizerAPO-src-1.4.2.zip $base/EqualizerAPO-src-1.4.2.zip
+          echo "7403be7427bbe1936a40dded082829b6e217fc4f5990fee5cba501f0ae055afa  dist/windows/EqualizerAPO64.exe" | sha256sum -c
+          echo "bacd5c78be71f3aaab010684ab39f0e5c1bbb45fcd75cbb92c103a145a731dc4  dist/EqualizerAPO-src-1.4.2.zip" | sha256sum -c
+          choco install nsis -y --no-progress
+          "/c/Program Files (x86)/NSIS/makensis.exe" -V2 -DVERSION=${{ steps.v.outputs.version }} installer/windows/eqaura.nsi
+
+      - name: Sizes and checksums
+        shell: bash
+        run: |
+          cd dist && ls -l
+          for f in EQaura-*; do (sha256sum "$f" 2>/dev/null || shasum -a 256 "$f") > "$f.sha256"; done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EQaura-${{ runner.os }}
+          path: |
+            dist/EQaura-*
+            dist/EqualizerAPO-src-*
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: package
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" out/* --repo "${{ github.repository }}" --title "EQaura ${{ github.ref_name }}" --generate-notes

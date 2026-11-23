@@ -1,0 +1,32 @@
+[workspace]
+resolver = "3"
+members = ["crates/*", "apps/*"]
+exclude = ["fuzz"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.92"
+license = "MIT"
+authors = ["AdityaTummuri"]
+repository = "https://github.com/AdityaTummuri/EQaura"
+
+[workspace.dependencies]
+eq-core = { path = "crates/eq-core" }
+eq-ai = { path = "crates/eq-ai" }
+eq-store = { path = "crates/eq-store" }
+eq-backend = { path = "crates/eq-backend" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+proptest = { version = "1", default-features = false, features = ["std"] }
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = true
+
+# Keep debug builds usable for real-time audio and drawing.
+[profile.dev.package."*"]
+opt-level = 1
+debug = false

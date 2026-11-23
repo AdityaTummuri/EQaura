@@ -1,0 +1,323 @@
+import { Model, ChatRow, Tone } from "../model.slint";
+import { Theme } from "../theme.slint";
+import { Card, Badge, Divider } from "../widgets/card.slint";
+import { Btn, IconBtn } from "../widgets/button.slint";
+import { Icon } from "../widgets/icon.slint";
+import { VScroll } from "../widgets/scroll.slint";
+import { PageFrame, PageHeader } from "../widgets/page.slint";
+
+component Avatar inherits Rectangle {
+    width: 28px;
+    height: 28px;
+    border-radius: 14px;
+    background: Theme.accent-soft;
+    Icon { name: "sparkle"; size: 16px; tint: Theme.accent; x: 6px; y: 6px; }
+}
+
+component Proposal inherits Rectangle {
+    in property <ChatRow> entry;
+    in property <int> index;
+    preferred-height: l.preferred-height;
+    l := VerticalLayout {
+        spacing: 10px;
+        Divider { }
+        Text { text: "Proposed changes"; color: Theme.text-2; font-size: Theme.fs-small; font-weight: 600; }
+        VerticalLayout {
+            spacing: 6px;
+            for c in root.entry.changes: HorizontalLayout {
+                spacing: 8px;
+                Rectangle {
+                    width: 14px;
+                    Rectangle { x: 4px; y: 7px; width: 5px; height: 5px; border-radius: 3px; background: Theme.accent; }
+                }
+                Text { text: c; color: Theme.text; font-size: Theme.fs-body; wrap: word-wrap; }
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: start;
+            if root.entry.state == 1: Btn { text: "Apply"; icon: "check"; kind: "primary"; compact: true; clicked => { Model.assistant-apply(root.index); } }
+            if root.entry.state == 1: Btn { text: "Dismiss"; kind: "ghost"; compact: true; clicked => { Model.assistant-dismiss(root.index); } }
+            if root.entry.state == 2: Badge { text: "Applied"; tone: Tone.good; icon: "check"; }
+            if root.entry.state == 2: Btn { text: "Undo"; icon: "undo"; kind: "ghost"; compact: true; clicked => { Model.undo(); } }
+            if root.entry.state == 3: Badge { text: "Dismissed"; icon: "close"; }
+            if root.entry.state == 4: Badge { text: "Undone"; icon: "undo"; }
+        }
+    }
+}
+
+component Bubble inherits Rectangle {
+    in property <ChatRow> entry;
+    in property <int> index;
+    preferred-height: l.preferred-height;
+    private property <bool> has-proposal: root.entry.changes.length > 0 && root.entry.state > 0;
+    l := HorizontalLayout {
+        alignment: root.entry.from-user ? end : start;
+        spacing: 10px;
+        if !root.entry.from-user: Rectangle { width: 28px; horizontal-stretch: 0; Avatar { y: 2px; } }
+        Rectangle {
+            horizontal-stretch: 0;
+            min-width: 120px;
+            preferred-width: inner.preferred-width;
+            max-width: 560px;
+            preferred-height: inner.preferred-height;
+            border-radius: Theme.r-lg;
+            background: root.entry.from-user ? Theme.accent-soft : Theme.surface;
+            border-width: root.entry.from-user ? 0px : 1px;
+            border-color: root.entry.tone == Tone.danger ? Theme.danger.with-alpha(0.6) : Theme.line;
+            inner := VerticalLayout {
+                padding: 12px;
+                padding-left: 14px;
+                padding-right: 14px;
+                spacing: 10px;
+                if root.entry.tone == Tone.danger: HorizontalLayout {
+                    spacing: 6px;
+                    Icon { name: "alert"; size: 16px; tint: Theme.danger; y: 1px; }
+                    Text { text: "Something went wrong"; color: Theme.danger; font-size: Theme.fs-small; font-weight: 600; vertical-alignment: center; }
+                }
+                if root.entry.tone == Tone.busy: HorizontalLayout {
+                    spacing: 8px;
+                    for k in 3: Rectangle {
+                        width: 8px;
+                        height: 8px;
+                        y: 4px;
+                        border-radius: 4px;
+                        background: Theme.text-3.with-alpha(0.4 + k * 0.3);
+                    }
+                    Text { text: "Thinking about your request. Nothing changes until you apply a proposal."; color: Theme.text-2; font-size: Theme.fs-body; wrap: word-wrap; }
+                }
+                if root.entry.tone != Tone.busy: Text {
+                    text: root.entry.text;
+                    color: Theme.text;
+                    font-size: Theme.fs-body + 1px;
+                    wrap: word-wrap;
+                }
+                if root.has-proposal: Proposal { entry: root.entry; index: root.index; }
+                if !root.entry.from-user && root.entry.origin != "": Text {
+                    text: root.entry.origin;
+                    color: Theme.text-3;
+                    font-size: Theme.fs-caption;
+                    overflow: elide;
+                }
+            }
+        }
+    }
+}
+
+component Chip inherits Rectangle {
+    in property <string> text;
+    in property <bool> enabled: true;
+    callback clicked();
+    horizontal-stretch: 0;
+    height: 30px;
+    preferred-width: t.preferred-width + 28px;
+    border-radius: 15px;
+    border-width: 1px;
+    border-color: root.enabled && ta.has-hover ? Theme.accent : Theme.line-strong;
+    background: !root.enabled ? transparent : ta.pressed ? Theme.surface-3 : ta.has-hover ? Theme.surface-2 : Theme.surface;
+    animate border-color { duration: Theme.dur-fast; }
+    accessible-role: AccessibleRole.button;
+    accessible-label: root.text;
+    accessible-enabled: root.enabled;
+    accessible-action-default => { root.clicked(); }
+    t := Text {
+        text: root.text;
+        color: root.enabled ? Theme.text : Theme.text-3;
+        font-size: Theme.fs-body;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    ta := TouchArea { enabled: root.enabled; mouse-cursor: pointer; clicked => { root.clicked(); } }
+    fs := FocusScope {
+        enabled: root.enabled;
+        focus-on-click: false;
+        key-pressed(e) => {
+            if (e.text == " " || e.text == Key.Return) { root.clicked(); return accept; }
+            return reject;
+        }
+    }
+    if fs.has-focus: Rectangle {
+        x: -3px; y: -3px; width: parent.width + 6px; height: parent.height + 6px;
+        border-radius: 18px; border-width: 2px; border-color: Theme.focus;
+    }
+}
+
+component Composer inherits Rectangle {
+    private property <string> draft;
+    height: 48px;
+    border-radius: Theme.r-lg;
+    border-width: 1px;
+    border-color: ti.has-focus ? Theme.accent : Theme.line-strong;
+    background: Theme.surface;
+    animate border-color { duration: Theme.dur-fast; }
+    accessible-role: AccessibleRole.text-input;
+    accessible-label: "Message to the assistant";
+    function send() {
+        if (ti.text != "" && !Model.assistant-busy) {
+            Model.assistant-send(ti.text);
+            ti.text = "";
+        }
+    }
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 8px;
+        spacing: 8px;
+        ti := TextInput {
+            horizontal-stretch: 1;
+            font-size: Theme.fs-body + 1px;
+            color: Theme.text;
+            vertical-alignment: center;
+            single-line: true;
+            enabled: !Model.assistant-busy;
+            selection-background-color: Theme.accent.with-alpha(0.35);
+            selection-foreground-color: Theme.text;
+            accessible-role: AccessibleRole.none;
+            accepted => { root.send(); }
+        }
+        if Model.assistant-busy: Btn {
+            y: (parent.height - self.height) / 2;
+            text: "Cancel";
+            icon: "stop";
+            clicked => { Model.assistant-cancel(); }
+        }
+        if !Model.assistant-busy: Btn {
+            y: (parent.height - self.height) / 2;
+            text: "Send";
+            icon: "send";
+            kind: "primary";
+            enabled: ti.text != "";
+            clicked => { root.send(); }
+        }
+    }
+    if ti.text == "": Text {
+        x: 16px;
+        text: Model.assistant-busy ? "Waiting for a reply" : "Describe what you want to change, for example: less harsh vocals";
+        color: Theme.text-3;
+        font-size: Theme.fs-body + 1px;
+        vertical-alignment: center;
+        width: parent.width - 120px;
+        overflow: elide;
+    }
+}
+
+export component AssistantPage inherits Rectangle {
+    private property <bool> sends-open: false;
+    PageFrame {
+        max-content: 820px;
+        VerticalLayout {
+            padding-top: 24px;
+            padding-bottom: 20px;
+            spacing: 14px;
+            PageHeader {
+                title: "Assistant";
+                subtitle: "Describe the sound you want in plain English. It proposes changes, and you decide.";
+                VerticalLayout {
+                    horizontal-stretch: 0;
+                    alignment: start;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Badge { text: Model.assistant-provider; icon: "sparkle"; }
+                        Btn { text: "Clear chat"; icon: "trash"; kind: "ghost"; compact: true; enabled: Model.chat.length > 0 && !Model.assistant-busy; clicked => { Model.assistant-clear(); } }
+                    }
+                }
+            }
+
+            // what gets sent
+            Rectangle {
+                preferred-height: sends-l.preferred-height;
+                border-radius: Theme.r-md;
+                background: Theme.surface-2;
+                border-width: 1px;
+                border-color: Theme.line;
+                clip: true;
+                sends-l := VerticalLayout {
+                    Rectangle {
+                        height: 36px;
+                        background: sends-ta.has-hover ? Theme.surface-3.with-alpha(0.5) : transparent;
+                        accessible-role: AccessibleRole.button;
+                        accessible-label: "What gets sent";
+                        accessible-expandable: true;
+                        accessible-expanded: root.sends-open;
+                        accessible-action-default => { root.sends-open = !root.sends-open; }
+                        HorizontalLayout {
+                            padding-left: 12px;
+                            padding-right: 12px;
+                            spacing: 8px;
+                            Icon { name: "eye"; size: 16px; tint: Theme.text-2; y: (parent.height - self.height) / 2; }
+                            Text { text: "What gets sent"; color: Theme.text; font-size: Theme.fs-body; font-weight: 500; vertical-alignment: center; horizontal-stretch: 0; }
+                            Text { text: Model.assistant-provider == "Built-in rules" ? "Nothing leaves this computer" : "Open to see exactly what is sent"; color: Theme.text-2; font-size: Theme.fs-body; vertical-alignment: center; horizontal-alignment: left; horizontal-stretch: 1; overflow: elide; }
+                            Icon { name: root.sends-open ? "chevron-up" : "chevron-down"; size: 16px; tint: Theme.text-2; y: (parent.height - self.height) / 2; }
+                        }
+                        sends-ta := TouchArea { mouse-cursor: pointer; clicked => { root.sends-open = !root.sends-open; } }
+                    }
+                    if root.sends-open: VerticalLayout {
+                        padding: 12px;
+                        padding-top: 4px;
+                        Text {
+                            text: Model.assistant-sends != "" ? Model.assistant-sends : "Nothing is sent. The built-in rules run on this computer.";
+                            color: Theme.text-2;
+                            font-size: Theme.fs-body;
+                            wrap: word-wrap;
+                        }
+                    }
+                }
+            }
+
+            // conversation
+            Card {
+                vertical-stretch: 1;
+                min-height: 140px;
+                clip: true;
+                if Model.chat.length == 0: VerticalLayout {
+                    alignment: center;
+                    spacing: 10px;
+                    padding: 24px;
+                    Rectangle {
+                        height: 44px;
+                        Avatar { x: (parent.width - self.width) / 2; width: 44px; height: 44px; border-radius: 22px; }
+                    }
+                    Text { text: "Ask for a change in your own words"; color: Theme.text; font-size: Theme.fs-lead; font-weight: 600; horizontal-alignment: center; wrap: word-wrap; }
+                    Text { text: "For example: \u{201C}Vocals sound harsh\u{201D} or \u{201C}I want more bass for movies\u{201D}. You will see exactly what would change before anything is applied."; color: Theme.text-2; font-size: Theme.fs-body; horizontal-alignment: center; wrap: word-wrap; }
+                }
+                if Model.chat.length > 0: Rectangle {
+                    chat-fl := Flickable {
+                        width: parent.width;
+                        height: parent.height;
+                        interactive: false;
+                        changed content-height => { self.content-y = Math.min(0px, self.height - self.content-height); }
+                        VerticalLayout {
+                            padding: 16px;
+                            padding-right: 22px;
+                            spacing: 16px;
+                            alignment: start;
+                            for entry[i] in Model.chat: Bubble { entry: entry; index: i; }
+                        }
+                    }
+                    VScroll {
+                        x: parent.width - self.width;
+                        height: parent.height;
+                        content-height: chat-fl.content-height;
+                        visible-height: chat-fl.height;
+                        content-y <=> chat-fl.content-y;
+                    }
+                }
+            }
+
+            // suggestions
+            Rectangle {
+                height: 30px;
+                clip: true;
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: start;
+                    for s in Model.assistant-suggestions: Chip {
+                        text: s;
+                        enabled: !Model.assistant-busy;
+                        clicked => { Model.assistant-send(s); }
+                    }
+                }
+            }
+            Composer { }
+        }
+    }
+}

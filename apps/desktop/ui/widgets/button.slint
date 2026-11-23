@@ -1,0 +1,122 @@
+import { Theme } from "../theme.slint";
+import { Icon } from "icon.slint";
+import { FocusRing } from "focus.slint";
+
+// Text button. kind: "primary", "secondary", "ghost" or "danger".
+export component Btn inherits Rectangle {
+    in property <string> text;
+    in property <string> icon;
+    in property <string> kind: "secondary";
+    in property <bool> enabled: true;
+    in property <bool> compact: false;
+    in property <string> label;
+    callback clicked();
+
+    private property <bool> primary: root.kind == "primary";
+    private property <bool> danger: root.kind == "danger";
+    private property <bool> ghost: root.kind == "ghost";
+    private property <color> fg: !root.enabled ? Theme.text-3
+        : root.primary ? Theme.accent-on
+        : root.danger ? Theme.danger : Theme.text;
+
+    horizontal-stretch: 0;
+    height: root.compact ? 28px : 32px;
+    min-width: lay.min-width;
+    preferred-width: lay.preferred-width;
+    border-radius: Theme.r-md;
+    border-width: root.primary || root.ghost ? 0px : 1px;
+    border-color: !root.enabled ? Theme.line : root.danger ? Theme.danger.with-alpha(0.5) : Theme.line-strong;
+    background: !root.enabled ? (root.primary ? Theme.surface-3 : transparent)
+        : root.primary ? (ta.pressed ? Theme.accent-press : ta.has-hover ? Theme.accent-hover : Theme.accent)
+        : root.danger ? (ta.pressed ? Theme.danger.with-alpha(0.26) : ta.has-hover ? Theme.danger.with-alpha(0.14) : transparent)
+        : root.ghost ? (ta.pressed ? Theme.surface-3 : ta.has-hover ? Theme.surface-2 : transparent)
+        : (ta.pressed ? Theme.surface-3 : ta.has-hover ? Theme.surface-2 : Theme.surface);
+    animate background { duration: Theme.dur-fast; easing: ease-out; }
+    accessible-role: button;
+    accessible-label: root.label != "" ? root.label : root.text;
+    accessible-enabled: root.enabled;
+    accessible-action-default => { if (root.enabled) { root.clicked(); } }
+
+    lay := HorizontalLayout {
+        padding-left: root.text == "" ? 8px : (root.icon != "" ? 10px : 14px);
+        padding-right: root.text == "" ? 8px : 14px;
+        spacing: 6px;
+        alignment: center;
+        if root.icon != "": Icon {
+            name: root.icon;
+            size: 16px;
+            tint: root.fg;
+            y: (parent.height - self.height) / 2;
+        }
+        if root.text != "": Text {
+            text: root.text;
+            color: root.fg;
+            font-size: Theme.fs-body;
+            font-weight: root.primary ? 600 : 500;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+    FocusRing { show: fs.has-focus; radius: root.border-radius; }
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+    fs := FocusScope {
+        enabled: root.enabled;
+        focus-on-click: false;
+        key-pressed(e) => {
+            if (e.text == " " || e.text == Key.Return) { root.clicked(); return accept; }
+            return reject;
+        }
+    }
+}
+
+// Square icon-only button with a tooltip-style accessible label.
+export component IconBtn inherits Rectangle {
+    in property <string> icon;
+    in property <string> label;
+    in property <bool> enabled: true;
+    in property <bool> active: false;
+    in property <string> kind: "ghost";
+    in property <length> size: 32px;
+    callback clicked();
+
+    horizontal-stretch: 0;
+    width: root.size;
+    height: root.size;
+    border-radius: Theme.r-md;
+    border-width: root.kind == "secondary" ? 1px : 0px;
+    border-color: Theme.line-strong;
+    background: !root.enabled ? transparent
+        : root.active ? Theme.accent-soft
+        : ta.pressed ? Theme.surface-3 : ta.has-hover ? Theme.surface-2 : (root.kind == "secondary" ? Theme.surface : transparent);
+    animate background { duration: Theme.dur-fast; easing: ease-out; }
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-enabled: root.enabled;
+    accessible-action-default => { if (root.enabled) { root.clicked(); } }
+
+    Icon {
+        name: root.icon;
+        size: 18px;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        tint: !root.enabled ? Theme.text-3 : root.active ? Theme.accent : Theme.text-2;
+    }
+    FocusRing { show: fs.has-focus; radius: root.border-radius; }
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+    fs := FocusScope {
+        enabled: root.enabled;
+        focus-on-click: false;
+        key-pressed(e) => {
+            if (e.text == " " || e.text == Key.Return) { root.clicked(); return accept; }
+            return reject;
+        }
+    }
+}

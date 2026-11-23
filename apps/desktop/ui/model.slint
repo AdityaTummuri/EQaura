@@ -1,0 +1,208 @@
+// The contract between the Rust side and the interface.
+// Rust owns every value here. The interface only reads properties and calls
+// callbacks; it never changes a Model property itself unless marked in-out.
+
+export enum Page { equalizer, headphones, hearing, assistant, presets, system, settings, about }
+export enum Tone { neutral, good, warning, danger, busy }
+
+// One draggable band. x/y are 0..1 positions inside the graph (y grows downward).
+export struct Band {
+    on: bool,
+    kind: int,       // index into Model.kind-names
+    channel: int,    // 0 both, 1 left, 2 right
+    freq: float,
+    gain: float,
+    q: float,
+    has-gain: bool,  // false for low-pass, high-pass and notch
+    x: float,
+    y: float,
+    warn: bool,
+}
+export struct GridLine { pos: float, label: string, strong: bool }
+export struct Slider10 { label: string, gain: float }
+export struct Warning { tone: Tone, title: string, detail: string }
+export struct PresetRow { name: string, detail: string, active: bool, builtin: bool }
+export struct HeadphoneRow { name: string, source: string, form: string, active: bool }
+export struct ChatRow {
+    from-user: bool,
+    text: string,
+    tone: Tone,            // busy = still thinking, danger = error
+    changes: [string],     // human-readable list, empty when there is no proposal
+    state: int,            // 0 no proposal, 1 waiting for a decision, 2 applied, 3 dismissed, 4 undone
+    origin: string,        // "Built-in rules" or the model name
+}
+export struct DeviceRow { name: string, detail: string, profile: string, is-default: bool }
+export struct HealthRow { tone: Tone, title: string, detail: string, action: string } // empty action = no button
+export struct EarBar { label: string, left: float, right: float, tested: bool } // dB of compensation
+export struct Credit { name: string, license: string, detail: string }
+
+export global Model {
+    // ---- window ----
+    in-out property <Page> page: Page.equalizer;
+    in property <int> theme-mode: 0;              // 0 follow system, 1 dark, 2 light
+    in property <string> version: "0.1.0";
+    in property <string> platform: "macOS";       // "Windows", "Linux" or "macOS"
+    in property <string> toast: "";               // short message; empty = hidden
+    in property <Tone> toast-tone: Tone.neutral;
+    in property <bool> toast-can-undo: false;
+
+    // ---- engine ----
+    in property <bool> enabled: true;             // EQ on / off
+    in property <Tone> engine-tone: Tone.good;
+    in property <string> engine-status: "Active";
+    in property <string> device-name: "Headphones";
+    in property <string> profile-name: "Untitled";
+    in property <bool> profile-dirty: false;
+    in property <bool> can-undo: false;
+    in property <bool> can-redo: false;
+    in property <bool> comparing: false;          // A/B: true while the flat sound plays
+
+    // ---- equalizer ----
+    in-out property <bool> slider-view: false;
+    in property <[Band]> bands;
+    in-out property <int> selected-band: -1;
+    in property <[string]> kind-names: ["Peak", "Low shelf", "High shelf", "Low pass", "High pass", "Notch"];
+    in property <[string]> channel-names: ["Both", "Left", "Right"];
+    in property <[Slider10]> sliders;
+    in property <float> slider-range: 12;         // dB shown up and down
+    in property <float> preamp: 0;
+    in property <bool> auto-preamp: true;
+    in property <string> peak-text: "";           // e.g. "Peak −0.2 dB"
+    in property <bool> clipping: false;
+    in property <[Warning]> warnings;             // advice only, nothing is blocked
+
+    // Path data in pixels of the graph's plot area (width x height as reported by graph-resized).
+    in property <string> curve-total;             // what you hear (left, or both when equal)
+    in property <string> curve-total-fill;
+    in property <string> curve-right;             // empty when both ears are equal
+    in property <string> curve-correction;        // headphone + hearing layer alone; empty if none
+    in property <string> curve-selected;          // selected band alone; empty if none
+    in property <[GridLine]> grid-x;
+    in property <[GridLine]> grid-y;
+
+    // Last reported plot size, for a Rust side that starts after the window.
+    in-out property <length> plot-width;
+    in-out property <length> plot-height;
+    callback graph-resized(length, length);
+    callback set-enabled(bool);
+    callback set-comparing(bool);
+    callback undo();
+    callback redo();
+    callback reset();
+    callback band-add(float, float);              // x, y 0..1 (double click on empty graph)
+    callback band-add-default();
+    callback band-remove(int);
+    callback band-drag(int, float, float);        // index, x, y 0..1
+    callback band-drag-end(int);
+    callback band-width(int, float);              // scroll steps: + narrower, - wider
+    callback band-set-on(int, bool);
+    callback band-set-kind(int, int);
+    callback band-set-channel(int, int);
+    callback band-set-freq(int, string);          // raw typed text, Rust parses "1.2k", "1200 Hz"
+    callback band-set-gain(int, string);
+    callback band-set-q(int, string);
+    callback band-nudge(int, int, float);         // index, field (0 freq, 1 gain, 2 q), steps
+    callback slider-changed(int, float);
+    callback slider-released(int);
+    callback set-auto-preamp(bool);
+    callback set-preamp(string);
+    callback nudge-preamp(float);
+
+    // ---- presets ----
+    in property <[PresetRow]> presets;
+    in property <bool> name-dialog: false;        // asks for a name
+    in property <string> name-dialog-title: "Save preset";
+    in-out property <string> name-dialog-text: "";
+    callback preset-load(int);
+    callback preset-delete(int);
+    callback preset-rename(int);
+    callback preset-save();                       // overwrite current, or ask for a name
+    callback preset-save-as();
+    callback preset-import();
+    callback preset-export();
+    callback name-dialog-accept(string);
+    callback name-dialog-cancel();
+
+    // ---- headphones ----
+    in-out property <string> headphone-query: "";
+    in property <[HeadphoneRow]> headphone-results;
+    in property <int> headphone-total: 0;         // size of the database
+    in property <int> headphone-matches: 0;
+    in property <string> headphone-active: "";    // empty = none
+    in property <bool> headphone-on: true;
+    in property <float> headphone-strength: 1.0;  // 0..1
+    callback headphone-search(string);
+    callback headphone-pick(int);
+    callback headphone-clear();
+    callback headphone-set-on(bool);
+    callback headphone-set-strength(float);
+
+    // ---- hearing test ----
+    in property <int> hearing-step: 0;            // 0 intro, 1 running, 2 result
+    in property <string> hearing-ear: "Left ear";
+    in property <string> hearing-tone: "1 kHz";
+    in property <float> hearing-progress: 0;      // 0..1
+    in property <bool> hearing-playing: false;
+    in property <[EarBar]> hearing-bars;
+    in property <bool> hearing-on: false;         // layer applied
+    in property <bool> hearing-has-result: false;
+    in property <float> hearing-strength: 0.5;    // 0..1
+    callback hearing-start();
+    callback hearing-answer(bool);                // true = heard it
+    callback hearing-replay();
+    callback hearing-cancel();
+    callback hearing-apply();
+    callback hearing-set-on(bool);
+    callback hearing-set-strength(float);
+    callback hearing-clear();
+
+    // ---- assistant ----
+    in property <[ChatRow]> chat;
+    in property <bool> assistant-busy: false;
+    in property <string> assistant-provider: "Built-in rules";
+    in property <[string]> assistant-suggestions: ["More bass", "Less harsh", "Clearer vocals", "Warmer", "Night listening"];
+    in property <string> assistant-sends: "";     // plain text of what would be sent
+    callback assistant-send(string);
+    callback assistant-cancel();
+    callback assistant-apply(int);
+    callback assistant-dismiss(int);
+    callback assistant-clear();
+
+    // ---- system ----
+    in property <[DeviceRow]> devices;
+    in property <[HealthRow]> health;
+    in property <bool> health-busy: false;
+    callback health-refresh();
+    callback health-action(int);
+
+    // ---- settings ----
+    in property <[string]> provider-names: ["Built-in rules only", "Anthropic", "OpenAI compatible", "Ollama (local)"];
+    in property <int> provider: 0;
+    in property <string> provider-url: "";
+    in property <bool> provider-needs-url: false;
+    in property <bool> provider-needs-key: false;
+    in property <bool> provider-has-key: false;
+    in property <string> provider-key-hint: "";   // where the key is stored
+    in property <[string]> provider-models;
+    in property <string> provider-model: "";
+    in property <string> provider-status: "";
+    in property <Tone> provider-status-tone: Tone.neutral;
+    in property <bool> send-hearing: false;
+    in property <bool> start-at-login: false;
+    in property <bool> start-at-login-supported: true;
+    callback set-theme-mode(int);
+    callback set-provider(int);
+    callback set-provider-url(string);
+    callback set-provider-key(string);
+    callback clear-provider-key();
+    callback set-provider-model(string);
+    callback provider-load-models();
+    callback set-send-hearing(bool);
+    callback set-start-at-login(bool);
+    callback open-data-folder();
+    callback export-diagnostics();
+
+    // ---- about ----
+    in property <[Credit]> credits;
+    callback open-link(string);
+}

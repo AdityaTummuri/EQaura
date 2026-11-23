@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=EQaura
+GenericName=Equalizer
+Comment=Shape the sound of everything you play
+Exec=eqaura
+Icon=eqaura
+Terminal=false
+Categories=AudioVideo;Audio;Mixer;
+Keywords=equalizer;eq;sound;audio;headphones;
+StartupWMClass=eqaura

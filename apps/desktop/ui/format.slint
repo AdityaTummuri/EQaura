@@ -1,0 +1,37 @@
+// Small text helpers so numbers always look the same everywhere.
+export global Fmt {
+    pure public function sign(v: float) -> string {
+        return v < -0.049 ? "\u{2212}" : (v > 0.049 ? "+" : "");
+    }
+    pure public function db1(v: float) -> string {
+        return sign(v) + Math.abs(v).to-fixed(1);
+    }
+    pure public function whole(v: float) -> string {
+        return (v < -0.5 ? "\u{2212}" : (v > 0.5 ? "+" : "")) + Math.abs(v).to-fixed(0);
+    }
+    pure public function db(v: float) -> string {
+        return sign(v) + Math.abs(v).to-fixed(1) + " dB";
+    }
+    pure public function hz(f: float) -> string {
+        if (f >= 10000) { return (f / 1000).to-fixed(1) + " kHz"; }
+        if (f >= 1000) { return (f / 1000).to-fixed(2) + " kHz"; }
+        if (f >= 100) { return Math.round(f).to-fixed(0) + " Hz"; }
+        return f.to-fixed(1) + " Hz";
+    }
+    pure public function q(v: float) -> string {
+        return v.to-fixed(2);
+    }
+    pure public function count(n: int) -> string {
+        if (n >= 1000000) { return "\{Math.floor(n / 1000000)},\{pad3(Math.floor(n / 1000))},\{pad3(n)}"; }
+        if (n >= 1000) { return "\{Math.floor(n / 1000)},\{pad3(n)}"; }
+        return "\{n}";
+    }
+    pure function pad3(n: int) -> string {
+        if (Math.mod(n, 1000) < 10) { return "00\{Math.mod(n, 1000)}"; }
+        if (Math.mod(n, 1000) < 100) { return "0\{Math.mod(n, 1000)}"; }
+        return "\{Math.mod(n, 1000)}";
+    }
+    pure public function pct(v: float) -> string {
+        return Math.round(v * 100).to-fixed(0) + "%";
+    }
+}

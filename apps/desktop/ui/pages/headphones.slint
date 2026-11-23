@@ -1,0 +1,195 @@
+import { Model, HeadphoneRow, Tone } from "../model.slint";
+import { Theme } from "../theme.slint";
+import { Fmt } from "../format.slint";
+import { Card, Badge, Divider } from "../widgets/card.slint";
+import { Btn } from "../widgets/button.slint";
+import { Toggle } from "../widgets/toggle.slint";
+import { HSlider } from "../widgets/slider.slint";
+import { SearchField } from "../widgets/field.slint";
+import { Icon } from "../widgets/icon.slint";
+import { VScroll } from "../widgets/scroll.slint";
+import { PageFrame, PageHeader, EmptyState } from "../widgets/page.slint";
+
+component ResultRow inherits Rectangle {
+    in property <HeadphoneRow> entry;
+    callback picked();
+    height: 56px;
+    Rectangle {
+        x: 4px;
+        y: 3px;
+        width: parent.width - 8px;
+        height: parent.height - 6px;
+        border-radius: 8px;
+        background: root.entry.active ? Theme.accent-soft : ta.pressed ? Theme.surface-3 : ta.has-hover ? Theme.surface-2 : transparent;
+        animate background { duration: Theme.dur-fast; }
+    }
+    accessible-role: list-item;
+    accessible-label: root.entry.name + ", " + root.entry.form + ", " + root.entry.source + (root.entry.active ? ", in use" : "");
+    accessible-action-default => { root.picked(); }
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 16px;
+        spacing: 12px;
+        VerticalLayout {
+            horizontal-stretch: 1;
+            alignment: center;
+            spacing: 2px;
+            Text { text: root.entry.name; color: Theme.text; font-size: Theme.fs-body + 1px; font-weight: 600; overflow: elide; }
+            Text { text: root.entry.source; color: Theme.text-2; font-size: Theme.fs-small; overflow: elide; }
+        }
+        Rectangle {
+            horizontal-stretch: 0;
+            width: tags.preferred-width;
+            tags := HorizontalLayout {
+                spacing: 8px;
+                alignment: end;
+                if root.entry.active: Badge { y: (parent.height - self.height) / 2; text: "In use"; tone: Tone.good; icon: "check"; }
+                Badge { y: (parent.height - self.height) / 2; text: root.entry.form; }
+            }
+        }
+    }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { root.picked(); } }
+}
+
+// Only the rows in view exist, so thousands of results stay cheap.
+component ResultList inherits Rectangle {
+    private property <length> entry-h: 56px;
+    private property <int> total: Model.headphone-results.length;
+    private property <int> first: Math.max(0, Math.floor(-fl.content-y / root.entry-h));
+    private property <int> count: Math.max(0, Math.min(Math.ceil(root.height / root.entry-h) + 2, root.total - root.first));
+    clip: true;
+    fl := Flickable {
+        width: parent.width;
+        height: parent.height;
+        content-height: root.total * root.entry-h;
+        interactive: false;
+        Rectangle {
+            y: root.first * root.entry-h;
+            height: root.count * root.entry-h;
+            width: parent.width;
+            for i in root.count: ResultRow {
+                y: i * root.entry-h;
+                width: parent.width - 10px;
+                entry: Model.headphone-results[root.first + i];
+                picked => { Model.headphone-pick(root.first + i); }
+            }
+        }
+    }
+    VScroll {
+        x: parent.width - self.width;
+        height: parent.height;
+        content-height: fl.content-height;
+        visible-height: fl.height;
+        content-y <=> fl.content-y;
+    }
+}
+
+export component HeadphonesPage inherits Rectangle {
+    private property <bool> has-active: Model.headphone-active != "";
+    PageFrame {
+        VerticalLayout {
+            padding-top: 24px;
+            padding-bottom: 20px;
+            spacing: 16px;
+            PageHeader {
+                title: "Headphones";
+                subtitle: "Pick your model and EQaura corrects its known quirks, so it sounds closer to a neutral reference.";
+            }
+
+            Card {
+                height: root.has-active ? 112px : 64px;
+                raised: !root.has-active;
+                if root.has-active: VerticalLayout {
+                    padding: 16px;
+                    spacing: 14px;
+                    HorizontalLayout {
+                        spacing: 12px;
+                        Rectangle {
+                            width: 36px;
+                            height: 36px;
+                            border-radius: 18px;
+                            background: Theme.accent-soft;
+                            Icon { name: "headphones"; size: 20px; tint: Theme.accent; x: 8px; y: 8px; }
+                        }
+                        VerticalLayout {
+                            alignment: center;
+                            spacing: 1px;
+                            Text { text: Model.headphone-active; color: Theme.text; font-size: Theme.fs-lead; font-weight: 600; overflow: elide; }
+                            Text { text: Model.headphone-on ? "Correction is on" : "Correction is off"; color: Theme.text-2; font-size: Theme.fs-small; }
+                        }
+                        Rectangle { horizontal-stretch: 1; }
+                        Toggle {
+                            y: (parent.height - self.height) / 2;
+                            checked: Model.headphone-on;
+                            label: "Headphone correction";
+                            toggled(v) => { Model.headphone-set-on(v); }
+                        }
+                        Btn {
+                            y: (parent.height - self.height) / 2;
+                            text: "Remove";
+                            icon: "close";
+                            kind: "ghost";
+                            compact: true;
+                            label: "Remove headphone correction";
+                            clicked => { Model.headphone-clear(); }
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 12px;
+                        Text { text: "Strength"; color: Theme.text-2; font-size: Theme.fs-body; vertical-alignment: center; horizontal-stretch: 0; min-width: 56px; }
+                        HSlider {
+                            enabled: Model.headphone-on;
+                            value: Model.headphone-strength;
+                            label: "Correction strength";
+                            changed(v) => { Model.headphone-set-strength(v); }
+                        }
+                        Text { text: Fmt.pct(Model.headphone-strength); color: Theme.text; font-size: Theme.fs-body; font-weight: 600; vertical-alignment: center; horizontal-alignment: right; horizontal-stretch: 0; min-width: 44px; }
+                    }
+                }
+                if !root.has-active: HorizontalLayout {
+                    padding-left: 16px;
+                    padding-right: 16px;
+                    spacing: 12px;
+                    Icon { name: "info"; size: 18px; tint: Theme.text-2; y: (parent.height - self.height) / 2; }
+                    Text {
+                        text: "No headphones selected. Choose a model below to apply its correction.";
+                        color: Theme.text-2;
+                        font-size: Theme.fs-body;
+                        vertical-alignment: center;
+                        overflow: elide;
+                    }
+                }
+            }
+
+            SearchField {
+                text <=> Model.headphone-query;
+                placeholder: "Search by brand or model, for example Sennheiser HD 600";
+                changed(t) => { Model.headphone-search(t); }
+                cleared => { Model.headphone-search(""); }
+            }
+
+            Text {
+                text: Model.headphone-total == 0 ? "" : Model.headphone-query == "" ? "\{Fmt.count(Model.headphone-total)} headphones" : "\{Fmt.count(Model.headphone-matches)} of \{Fmt.count(Model.headphone-total)} match";
+                color: Theme.text-2;
+                font-size: Theme.fs-small;
+                height: Model.headphone-total == 0 ? 0px : 16px;
+            }
+
+            Card {
+                vertical-stretch: 1;
+                min-height: 120px;
+                if Model.headphone-results.length > 0: ResultList { }
+                if Model.headphone-results.length == 0 && Model.headphone-total == 0: EmptyState {
+                    title: "The headphone list is not available yet";
+                    body: "EQaura could not find its headphone data. You can still use the equalizer as normal. Try restarting the app, or check the System page.";
+                    Icon { name: "headphones"; size: 24px; tint: Theme.text-2; x: 12px; y: 12px; }
+                }
+                if Model.headphone-results.length == 0 && Model.headphone-total > 0: EmptyState {
+                    title: "No headphones match \u{201C}\{Model.headphone-query}\u{201D}";
+                    body: "Check the spelling, or try just the brand or a shorter part of the model name.";
+                    Icon { name: "search"; size: 24px; tint: Theme.text-2; x: 12px; y: 12px; }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,566 @@
+import { Model, Band, Tone } from "../model.slint";
+import { Theme } from "../theme.slint";
+import { Fmt } from "../format.slint";
+import { EqGraph } from "../graph.slint";
+import { Card, Divider } from "../widgets/card.slint";
+import { Btn, IconBtn } from "../widgets/button.slint";
+import { Segmented } from "../widgets/segmented.slint";
+import { Toggle } from "../widgets/toggle.slint";
+import { Select } from "../widgets/select.slint";
+import { NumField } from "../widgets/field.slint";
+import { Icon } from "../widgets/icon.slint";
+import { VScroll } from "../widgets/scroll.slint";
+
+// ---------------------------------------------------------------------------
+// Ten vertical sliders
+// ---------------------------------------------------------------------------
+component SliderCol inherits Rectangle {
+    in property <int> index;
+    in property <float> gain;
+    in property <string> label;
+    in property <float> range;
+    out property <length> track-top: 30px;
+    out property <length> track-h: Math.max(20px, root.height - 62px);
+
+    private property <float> clamped: Math.min(root.range, Math.max(-root.range, root.gain));
+    private property <length> thumb-y: root.track-top + (1 - (root.clamped + root.range) / (2 * root.range)) * root.track-h;
+    private property <length> zero-y: root.track-top + root.track-h / 2;
+    private property <bool> hot: ta.has-hover || ta.pressed || fs.has-focus;
+
+    accessible-role: slider;
+    accessible-label: root.label + " hertz band";
+    accessible-value: Fmt.db(root.gain);
+
+    function value-at(y: length) -> float {
+        return Math.min(root.range, Math.max(-root.range, (1 - (y - root.track-top) / root.track-h) * 2 * root.range - root.range));
+    }
+    function set(v: float) {
+        Model.slider-changed(root.index, Math.round(v * 10) / 10);
+    }
+
+    // value readout
+    Text {
+        y: 4px;
+        width: parent.width;
+        height: 20px;
+        text: Fmt.db1(root.gain);
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        font-size: Theme.fs-small;
+        font-weight: 600;
+        color: Math.abs(root.gain) < 0.05 ? Theme.text-2 : Theme.text;
+    }
+    // groove
+    Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: root.track-top;
+        width: 4px;
+        height: root.track-h;
+        border-radius: 2px;
+        background: Theme.dark ? Theme.surface-3 : Theme.grid-strong;
+    }
+    // fill from zero to value
+    Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: Math.min(root.zero-y, root.thumb-y);
+        width: 4px;
+        height: Math.abs(root.thumb-y - root.zero-y);
+        background: Model.enabled ? Theme.accent-line : Theme.text-3;
+    }
+    // thumb
+    Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: root.thumb-y - self.height / 2;
+        width: 26px;
+        height: 14px;
+        border-radius: 7px;
+        background: Theme.dark ? Theme.text : #FFFFFF;
+        border-width: 1.5px;
+        border-color: root.hot ? Theme.accent-line : (Theme.dark ? Theme.text : Theme.line-strong);
+        drop-shadow-blur: Theme.dark ? 0px : 3px;
+        drop-shadow-color: #1B1A1730;
+        drop-shadow-offset-y: 1px;
+        animate border-color { duration: Theme.dur-fast; }
+    }
+    // frequency label
+    Text {
+        y: parent.height - 24px;
+        width: parent.width;
+        height: 20px;
+        text: root.label;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        font-size: Theme.fs-small;
+        color: Theme.text-2;
+    }
+    ta := TouchArea {
+        x: 0px;
+        y: root.track-top - 8px;
+        height: root.track-h + 16px;
+        mouse-cursor: pointer;
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) { root.set(root.value-at(self.mouse-y + self.y)); }
+            if (e.kind == PointerEventKind.up) { Model.slider-released(root.index); }
+        }
+        moved => { root.set(root.value-at(self.mouse-y + self.y)); }
+        double-clicked => { Model.slider-changed(root.index, 0); Model.slider-released(root.index); }
+        scroll-event(e) => {
+            root.set(root.gain + (e.delta-y > 0px ? 0.5 : -0.5));
+            Model.slider-released(root.index);
+            return accept;
+        }
+    }
+    fs := FocusScope {
+        width: 1px;
+        height: 1px;
+        focus-on-click: false;
+        key-pressed(e) => {
+            if (e.text == Key.UpArrow) { root.set(Math.min(root.range, root.gain + (e.modifiers.shift ? 3 : 0.5))); Model.slider-released(root.index); return accept; }
+            if (e.text == Key.DownArrow) { root.set(Math.max(-root.range, root.gain - (e.modifiers.shift ? 3 : 0.5))); Model.slider-released(root.index); return accept; }
+            if (e.text == Key.Home || e.text == "0") { root.set(0); Model.slider-released(root.index); return accept; }
+            return reject;
+        }
+    }
+}
+
+component SlidersView inherits Rectangle {
+    private property <length> pl: 52px;
+    private property <length> pr: 16px;
+    private property <length> cw: (root.width - root.pl - root.pr) / Math.max(1, Model.sliders.length);
+    private property <length> top: 30px;
+    private property <length> th: Math.max(20px, root.height - 62px);
+
+    background: Theme.sunken;
+    clip: true;
+
+    for k in 5: Rectangle {
+        x: root.pl - 4px;
+        y: root.top + k * root.th / 4;
+        width: root.width - root.pl - root.pr + 8px;
+        height: 1px;
+        background: k == 2 ? Theme.grid-strong : Theme.grid;
+    }
+    for k in 5: Text {
+        x: 0px;
+        y: root.top + k * root.th / 4 - 8px;
+        width: root.pl - 12px;
+        height: 16px;
+        text: Fmt.whole(Model.slider-range * (1 - k * 0.5));
+        horizontal-alignment: right;
+        vertical-alignment: center;
+        font-size: Theme.fs-caption;
+        color: k == 2 ? Theme.text-2 : Theme.text-3;
+    }
+    for s[i] in Model.sliders: SliderCol {
+        x: root.pl + i * root.cw;
+        y: 0px;
+        width: root.cw;
+        height: root.height;
+        index: i;
+        gain: s.gain;
+        label: s.label;
+        range: Model.slider-range;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Advice list
+// ---------------------------------------------------------------------------
+component WarningsPanel inherits Rectangle {
+    private property <bool> open: false;
+    private property <int> n: Model.warnings.length;
+    private property <Tone> first-tone: Model.warnings[0].tone;
+    preferred-height: col.preferred-height;
+    min-height: col.min-height;
+
+    col := VerticalLayout {
+        Rectangle {
+            height: 36px;
+            background: ta.has-hover && root.n > 1 ? Theme.surface-2 : transparent;
+            accessible-role: button;
+            accessible-label: root.n > 1 ? (root.open ? "Hide suggestions" : "Show suggestions") : Model.warnings[0].title;
+            accessible-action-default => { if (root.n > 1) { root.open = !root.open; } }
+            HorizontalLayout {
+                padding-left: 16px;
+                padding-right: 12px;
+                spacing: 8px;
+                Icon { name: "warning"; size: 16px; tint: Theme.tone-color(root.first-tone); y: (parent.height - self.height) / 2; }
+                Text {
+                    text: root.n > 1 ? "\{root.n} suggestions" : Model.warnings[0].title;
+                    color: Theme.text;
+                    font-size: Theme.fs-body;
+                    font-weight: 600;
+                    vertical-alignment: center;
+                    horizontal-stretch: 0;
+                }
+                Text {
+                    text: root.n > 1 ? "Advice only, nothing is blocked" : Model.warnings[0].detail;
+                    color: Theme.text-2;
+                    font-size: Theme.fs-body;
+                    vertical-alignment: center;
+                    horizontal-alignment: left;
+                    horizontal-stretch: 1;
+                    overflow: elide;
+                }
+                if root.n > 1: Icon { name: root.open ? "chevron-up" : "chevron-down"; size: 16px; tint: Theme.text-2; y: (parent.height - self.height) / 2; }
+            }
+            ta := TouchArea {
+                enabled: root.n > 1;
+                mouse-cursor: pointer;
+                clicked => { root.open = !root.open; }
+            }
+        }
+        if root.open && root.n > 1: Rectangle {
+            height: Math.min(root.n * 44px, 132px);
+            Flickable {
+                content-height: root.n * 44px;
+                interactive: false;
+                for w[i] in Model.warnings: Rectangle {
+                    y: i * 44px;
+                    height: 44px;
+                    HorizontalLayout {
+                        padding-left: 40px;
+                        padding-right: 16px;
+                        spacing: 10px;
+                        Rectangle {
+                            width: 6px;
+                            Rectangle {
+                                y: (parent.height - self.height) / 2;
+                                width: 6px;
+                                height: 6px;
+                                border-radius: 3px;
+                                background: Theme.tone-color(w.tone);
+                            }
+                        }
+                        VerticalLayout {
+                            alignment: center;
+                            Text { text: w.title; color: Theme.text; font-size: Theme.fs-body; font-weight: 500; overflow: elide; }
+                            Text { text: w.detail; color: Theme.text-2; font-size: Theme.fs-small; overflow: elide; }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Band inspector
+// ---------------------------------------------------------------------------
+component BandChip inherits Rectangle {
+    in property <int> index;
+    in property <Band> band;
+    in property <bool> selected;
+    callback clicked();
+    private property <color> c: Theme.band-color(root.index);
+    width: 34px;
+    height: 34px;
+    border-radius: Theme.r-md;
+    background: root.selected ? root.c.with-alpha(0.16) : ta.pressed ? Theme.surface-3 : ta.has-hover ? Theme.surface-2 : transparent;
+    border-width: root.selected ? 1.5px : 0px;
+    border-color: root.c;
+    animate background { duration: Theme.dur-fast; }
+    accessible-role: button;
+    accessible-label: "Band \{root.index + 1}, \{Theme.band-name(root.index)}, " + Fmt.hz(root.band.freq) + (root.band.on ? "" : ", off");
+    accessible-checkable: true;
+    accessible-checked: root.selected;
+    accessible-action-default => { root.clicked(); }
+    Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: 22px;
+        height: 22px;
+        border-radius: 11px;
+        background: root.band.on ? root.c : transparent;
+        border-width: 1.5px;
+        border-color: root.c;
+        Text {
+            text: "\{root.index + 1}";
+            color: root.band.on ? Theme.on-band : root.c;
+            font-size: root.index >= 9 ? 10px : 11px;
+            font-weight: 700;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+    if root.band.warn: Rectangle {
+        x: parent.width - 11px;
+        y: 2px;
+        width: 8px;
+        height: 8px;
+        border-radius: 4px;
+        background: Theme.warn;
+    }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+component Labeled inherits VerticalLayout {
+    in property <string> label;
+    spacing: 4px;
+    Text { text: root.label; color: Theme.text-2; font-size: Theme.fs-caption; font-weight: 500; overflow: elide; }
+    @children
+}
+
+component BandEditor inherits Rectangle {
+    private property <int> sel: Model.selected-band;
+    private property <bool> ok: root.sel >= 0 && root.sel < Model.bands.length;
+    private property <Band> b: Model.bands[root.sel];
+    min-height: 56px;
+
+    if !root.ok: Text {
+        text: Model.bands.length == 0 ? "No bands yet. Double click the graph, or choose Add band." : "Select a band above, or click one on the graph, to edit it.";
+        color: Theme.text-2;
+        font-size: Theme.fs-body;
+        vertical-alignment: center;
+        horizontal-alignment: left;
+    }
+    if root.ok: HorizontalLayout {
+        spacing: 12px;
+        Labeled {
+            label: "On";
+            horizontal-stretch: 0;
+            Rectangle {
+                height: 32px;
+                width: 40px;
+                Toggle {
+                    checked: root.b.on;
+                    label: "Band \{root.sel + 1} on";
+                    toggled(v) => { Model.band-set-on(root.sel, v); }
+                }
+            }
+        }
+        Labeled {
+            label: "Type";
+            horizontal-stretch: 2;
+            min-width: 100px;
+            Select {
+                options: Model.kind-names;
+                current: root.b.kind;
+                label: "Filter type";
+                selected(i) => { Model.band-set-kind(root.sel, i); }
+            }
+        }
+        Labeled {
+            label: "Ear";
+            horizontal-stretch: 1.4;
+            min-width: 84px;
+            Select {
+                options: Model.channel-names;
+                current: root.b.channel;
+                label: "Ear";
+                selected(i) => { Model.band-set-channel(root.sel, i); }
+            }
+        }
+        NumField {
+            horizontal-stretch: 1.4;
+            label: "Frequency";
+            value: Fmt.hz(root.b.freq);
+            committed(t) => { Model.band-set-freq(root.sel, t); }
+            nudge(s) => { Model.band-nudge(root.sel, 0, s); }
+        }
+        NumField {
+            horizontal-stretch: 1.4;
+            label: "Gain";
+            enabled: root.b.has-gain;
+            value: root.b.has-gain ? Fmt.db(root.b.gain) : "Not used";
+            committed(t) => { Model.band-set-gain(root.sel, t); }
+            nudge(s) => { Model.band-nudge(root.sel, 1, s); }
+        }
+        NumField {
+            horizontal-stretch: 1;
+            label: "Width (Q)";
+            value: Fmt.q(root.b.q);
+            committed(t) => { Model.band-set-q(root.sel, t); }
+            nudge(s) => { Model.band-nudge(root.sel, 2, s); }
+        }
+        Labeled {
+            label: " ";
+            horizontal-stretch: 0;
+            IconBtn {
+                icon: "trash";
+                label: "Remove band \{root.sel + 1}";
+                kind: "secondary";
+                size: 32px;
+                clicked => { Model.band-remove(root.sel); }
+            }
+        }
+    }
+}
+
+component BandStrip inherits Rectangle {
+    private property <int> sel: Model.selected-band;
+    private property <length> step: 38px;
+    height: 36px;
+    changed sel => {
+        if (root.sel >= 0) {
+            if (root.sel * root.step + chips.content-x < 0px) { chips.content-x = -root.sel * root.step; }
+            else if ((root.sel + 1) * root.step + chips.content-x > chips.width) { chips.content-x = Math.min(0px, chips.width - (root.sel + 1) * root.step); }
+        }
+    }
+    wheel := TouchArea {
+        scroll-event(e) => {
+            chips.content-x = Math.min(0px, Math.max(chips.width - chips.content-width, chips.content-x + e.delta-y + e.delta-x));
+            return accept;
+        }
+        chips := Flickable {
+            content-width: Model.bands.length * root.step;
+            interactive: false;
+            for b[i] in Model.bands: BandChip {
+                x: i * root.step;
+                index: i;
+                band: b;
+                selected: i == root.sel;
+                clicked => { Model.selected-band = i; }
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+export component EqualizerPage inherits Rectangle {
+    private property <bool> narrow: root.width < 820px;
+
+    VerticalLayout {
+        padding: 20px;
+        padding-top: 16px;
+        padding-bottom: 16px;
+        spacing: 12px;
+
+        Card {
+            VerticalLayout {
+                // toolbar
+                HorizontalLayout {
+                    padding: 8px;
+                    padding-left: 10px;
+                    padding-right: 10px;
+                    spacing: 8px;
+                    Segmented {
+                        options: ["Curve", "Sliders"];
+                        icons: ["curve", "sliders"];
+                        label: "Equalizer view";
+                        current: Model.slider-view ? 1 : 0;
+                        selected(i) => { Model.slider-view = i == 1; }
+                    }
+                    Rectangle { horizontal-stretch: 1; }
+                    Btn {
+                        text: "Add band";
+                        icon: "plus";
+                        compact: true;
+                        clicked => { Model.band-add-default(); }
+                    }
+                    Btn {
+                        text: "Reset";
+                        icon: "reset";
+                        kind: "ghost";
+                        compact: true;
+                        label: "Reset equalizer";
+                        clicked => { Model.reset(); }
+                    }
+                }
+                Rectangle {
+                    vertical-stretch: 1;
+                    min-height: 150px;
+                    if !Model.slider-view: EqGraph {
+                        x: 10px;
+                        width: parent.width - 20px;
+                        height: parent.height;
+                        border-radius: Theme.r-md;
+                    }
+                    if Model.slider-view: SlidersView {
+                        x: 10px;
+                        width: parent.width - 20px;
+                        height: parent.height;
+                        border-radius: Theme.r-md;
+                    }
+                }
+                if Model.warnings.length > 0: Divider { }
+                if Model.warnings.length > 0: WarningsPanel { }
+                Divider { }
+                // preamp row
+                HorizontalLayout {
+                    padding-left: 16px;
+                    padding-right: 12px;
+                    padding-top: 6px;
+                    padding-bottom: 6px;
+                    spacing: 12px;
+                    height: 46px;
+                    Text {
+                        text: "Preamp";
+                        color: Theme.text;
+                        font-size: Theme.fs-body;
+                        font-weight: 600;
+                        vertical-alignment: center;
+                        horizontal-stretch: 0;
+                    }
+                    NumField {
+                        inline: true;
+                        label: "Preamp";
+                        horizontal-stretch: 0;
+                        preferred-width: 140px;
+                        enabled: !Model.auto-preamp;
+                        value: Fmt.db(Model.preamp);
+                        committed(t) => { Model.set-preamp(t); }
+                        nudge(s) => { Model.nudge-preamp(s * 0.5); }
+                    }
+                    Rectangle {
+                        horizontal-stretch: 0;
+                        preferred-width: auto-l.preferred-width;
+                        auto-l := HorizontalLayout {
+                            spacing: 8px;
+                            Text { text: "Auto"; color: Theme.text-2; font-size: Theme.fs-body; vertical-alignment: center; }
+                            Toggle {
+                                y: (parent.height - self.height) / 2;
+                                checked: Model.auto-preamp;
+                                label: "Automatic preamp";
+                                toggled(v) => { Model.set-auto-preamp(v); }
+                            }
+                        }
+                    }
+                    Rectangle { horizontal-stretch: 1; min-width: 0px; }
+                    Text {
+                        text: Model.peak-text;
+                        color: Model.clipping ? Theme.warn : Theme.text-2;
+                        font-size: Theme.fs-body;
+                        font-weight: Model.clipping ? 600 : 400;
+                        vertical-alignment: center;
+                        horizontal-stretch: 0;
+                    }
+                }
+            }
+        }
+
+        Card {
+            height: 124px;
+            VerticalLayout {
+                padding: 8px;
+                padding-left: 14px;
+                padding-right: 14px;
+                spacing: 6px;
+                HorizontalLayout {
+                    spacing: 8px;
+                    height: 36px;
+                    Text {
+                        text: "Bands";
+                        color: Theme.text;
+                        font-size: Theme.fs-body;
+                        font-weight: 600;
+                        vertical-alignment: center;
+                        horizontal-stretch: 0;
+                    }
+                    Text {
+                        text: "\{Model.bands.length}";
+                        color: Theme.text-3;
+                        font-size: Theme.fs-body;
+                        vertical-alignment: center;
+                        horizontal-stretch: 0;
+                    }
+                    BandStrip { horizontal-stretch: 1; }
+                }
+                Divider { }
+                BandEditor { vertical-stretch: 1; }
+            }
+        }
+    }
+}

@@ -1,0 +1,284 @@
+import { Theme } from "../theme.slint";
+import { Icon } from "icon.slint";
+import { FocusRing } from "focus.slint";
+
+component StepBtn inherits Rectangle {
+    in property <string> icon;
+    in property <string> label;
+    in property <bool> enabled: true;
+    callback clicked();
+    width: 28px;
+    background: !root.enabled ? transparent : ta.pressed ? Theme.surface-3 : ta.has-hover ? Theme.surface-3.with-alpha(0.7) : transparent;
+    animate background { duration: Theme.dur-fast; }
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-action-default => { if (root.enabled) { root.clicked(); } }
+    Icon {
+        name: root.icon;
+        size: 14px;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        tint: root.enabled ? Theme.text-2 : Theme.text-3;
+    }
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+component IconBtn2 inherits Rectangle {
+    callback clicked();
+    width: 26px;
+    height: 26px;
+    border-radius: 13px;
+    background: ta.pressed ? Theme.surface-3 : ta.has-hover ? Theme.surface-3.with-alpha(0.7) : transparent;
+    accessible-role: button;
+    accessible-label: "Clear search";
+    accessible-action-default => { root.clicked(); }
+    Icon { name: "close"; size: 14px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; tint: Theme.text-2; }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+// Single line text input that never fights the user.
+// It shows `value` while idle, lets the user type freely, and reports the text with
+// `committed` on Enter or when focus leaves. `edited` reports every keystroke.
+export component Field inherits Rectangle {
+    in property <string> value;
+    in property <string> placeholder;
+    in property <string> prefix;
+    in property <string> suffix;
+    in property <string> label;
+    in property <bool> enabled: true;
+    in property <bool> password: false;
+    in property <bool> bare: false;
+    in property <TextHorizontalAlignment> align: left;
+    out property <bool> has-focus: ti.has-focus;
+    callback committed(string);
+    callback edited(string);
+    public function focus-field() { ti.focus(); }
+
+    private property <bool> dirty;
+    private property <bool> awaiting;
+
+    height: 32px;
+    min-width: 56px;
+    clip: true;
+    border-radius: Theme.r-md;
+    border-width: root.bare ? 0px : 1px;
+    border-color: ti.has-focus ? Theme.accent : (ta.has-hover && root.enabled ? Theme.line-strong : Theme.line);
+    background: root.bare ? transparent : (root.enabled ? Theme.surface-2 : Theme.surface-2.with-alpha(0.5));
+    animate border-color { duration: Theme.dur-fast; }
+    accessible-role: text-input;
+    accessible-label: root.label;
+    accessible-enabled: root.enabled;
+
+    init => { ti.text = root.value; }
+    changed value => {
+        if (!ti.has-focus || root.awaiting) {
+            ti.text = root.value;
+            root.awaiting = false;
+        }
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: MouseCursor.text;
+        clicked => { ti.focus(); }
+    }
+    HorizontalLayout {
+        padding-left: root.bare ? 4px : 10px;
+        padding-right: root.bare ? 4px : 10px;
+        spacing: 4px;
+        if root.prefix != "": Text {
+            text: root.prefix;
+            color: Theme.text-3;
+            font-size: Theme.fs-body;
+            vertical-alignment: center;
+        }
+        ti := TextInput {
+            single-line: true;
+            enabled: root.enabled;
+            font-size: Theme.fs-body;
+            color: root.enabled ? Theme.text : Theme.text-3;
+            horizontal-alignment: root.align;
+            vertical-alignment: center;
+            input-type: root.password ? InputType.password : InputType.text;
+            selection-background-color: Theme.accent.with-alpha(0.35);
+            selection-foreground-color: Theme.text;
+            accessible-role: none;
+            edited => {
+                root.dirty = true;
+                root.edited(self.text);
+            }
+            accepted => {
+                if (root.dirty) {
+                    root.dirty = false;
+                    root.awaiting = true;
+                    root.committed(self.text);
+                }
+                self.text = root.value;
+            }
+            key-pressed(e) => {
+                if (e.text == Key.Escape) {
+                    root.dirty = false;
+                    self.text = root.value;
+                    self.clear-focus();
+                    return accept;
+                }
+                return reject;
+            }
+            changed has-focus => {
+                if (self.has-focus) {
+                    self.select-all();
+                } else {
+                    if (root.dirty) {
+                        root.dirty = false;
+                        root.awaiting = true;
+                        root.committed(self.text);
+                    }
+                    self.text = root.value;
+                }
+            }
+        }
+        if root.suffix != "": Text {
+            text: root.suffix;
+            color: Theme.text-3;
+            font-size: Theme.fs-body;
+            vertical-alignment: center;
+        }
+    }
+    if root.placeholder != "" && ti.text == "" && !ti.has-focus: Text {
+        x: root.bare ? 4px : 10px;
+        width: parent.width - 20px;
+        text: root.placeholder;
+        color: Theme.text-3;
+        font-size: Theme.fs-body;
+        vertical-alignment: center;
+        horizontal-alignment: root.align;
+        overflow: elide;
+    }
+}
+
+// Number input with minus and plus buttons. Typing, wheel and buttons all end up as callbacks.
+export component NumField inherits Rectangle {
+    in property <string> label;
+    in property <string> value;
+    in property <string> suffix;
+    in property <bool> enabled: true;
+    in property <bool> inline: false;
+    callback committed(string);
+    callback nudge(float);
+
+    private property <length> acc;
+
+    min-width: 112px;
+    preferred-width: 132px;
+    min-height: col.min-height;
+    preferred-height: col.preferred-height;
+
+    col := VerticalLayout {
+        spacing: 4px;
+        if !root.inline: Text {
+            text: root.label;
+            color: Theme.text-2;
+            font-size: Theme.fs-caption;
+            font-weight: 500;
+            overflow: elide;
+        }
+        box := Rectangle {
+            height: 32px;
+            border-radius: Theme.r-md;
+            border-width: 1px;
+            border-color: field.has-focus ? Theme.accent : (wheel.has-hover && root.enabled ? Theme.line-strong : Theme.line);
+            background: root.enabled ? Theme.surface-2 : Theme.surface-2.with-alpha(0.5);
+            animate border-color { duration: Theme.dur-fast; }
+            wheel := TouchArea {
+                enabled: root.enabled;
+                scroll-event(e) => {
+                    root.acc += e.delta-y;
+                    if (root.acc >= 24px) { root.acc = 0px; root.nudge(1); }
+                    if (root.acc <= -24px) { root.acc = 0px; root.nudge(-1); }
+                    return accept;
+                }
+            }
+            HorizontalLayout {
+                StepBtn {
+                    icon: "minus";
+                    label: "Decrease " + root.label;
+                    enabled: root.enabled;
+                    clicked => { root.nudge(-1); }
+                }
+                field := Field {
+                    bare: true;
+                    value: root.value;
+                    suffix: root.suffix;
+                    label: root.label;
+                    enabled: root.enabled;
+                    align: center;
+                    height: parent.height;
+                    committed(t) => { root.committed(t); }
+                }
+                StepBtn {
+                    icon: "plus";
+                    label: "Increase " + root.label;
+                    enabled: root.enabled;
+                    clicked => { root.nudge(1); }
+                }
+            }
+        }
+    }
+}
+
+// Search box. `text` is two-way bound by the caller, so typing searches live.
+export component SearchField inherits Rectangle {
+    in-out property <string> text;
+    in property <string> placeholder: "Search";
+    callback changed(string);
+    callback cleared();
+    height: 36px;
+    border-radius: Theme.r-md;
+    border-width: 1px;
+    border-color: ti.has-focus ? Theme.accent : (ta.has-hover ? Theme.line-strong : Theme.line);
+    background: Theme.surface-2;
+    animate border-color { duration: Theme.dur-fast; }
+    accessible-role: text-input;
+    accessible-label: root.placeholder;
+    ta := TouchArea { mouse-cursor: MouseCursor.text; clicked => { ti.focus(); } }
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 6px;
+        spacing: 8px;
+        Icon { name: "search"; size: 16px; tint: Theme.text-3; y: (parent.height - self.height) / 2; }
+        ti := TextInput {
+            text <=> root.text;
+            font-size: Theme.fs-body;
+            color: Theme.text;
+            vertical-alignment: center;
+            selection-background-color: Theme.accent.with-alpha(0.35);
+            selection-foreground-color: Theme.text;
+            accessible-role: none;
+            edited => { root.changed(self.text); }
+            key-pressed(e) => {
+                if (e.text == Key.Escape && self.text != "") {
+                    root.text = "";
+                    root.cleared();
+                    return accept;
+                }
+                return reject;
+            }
+        }
+        if root.text != "": IconBtn2 {
+            y: (parent.height - self.height) / 2;
+            clicked => { root.text = ""; root.cleared(); ti.focus(); }
+        }
+    }
+    if root.text == "": Text {
+        x: 36px;
+        text: root.placeholder;
+        color: Theme.text-3;
+        font-size: Theme.fs-body;
+        vertical-alignment: center;
+    }
+}
+

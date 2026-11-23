@@ -1,0 +1,105 @@
+import { Theme } from "../theme.slint";
+import { Icon } from "icon.slint";
+import { FocusRing } from "focus.slint";
+
+// Drop-down list. Arrow keys change the choice without opening it.
+export component Select inherits Rectangle {
+    in property <[string]> options;
+    in property <int> current;
+    in property <string> placeholder: "Choose";
+    in property <string> label;
+    in property <bool> enabled: true;
+    callback selected(int);
+
+    height: 32px;
+    min-width: 96px;
+    preferred-width: 140px;
+    border-radius: Theme.r-md;
+    border-width: 1px;
+    border-color: pop-open ? Theme.accent : (ta.has-hover && root.enabled ? Theme.line-strong : Theme.line);
+    background: root.enabled ? (ta.pressed ? Theme.surface-3 : Theme.surface-2) : Theme.surface-2.with-alpha(0.5);
+    animate background { duration: Theme.dur-fast; }
+    private property <bool> pop-open;
+    accessible-role: combobox;
+    accessible-label: root.label;
+    accessible-value: root.current >= 0 && root.current < root.options.length ? root.options[root.current] : root.placeholder;
+    accessible-enabled: root.enabled;
+    accessible-action-default => { if (root.enabled) { pop.show(); } }
+
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 8px;
+        spacing: 6px;
+        Text {
+            text: root.current >= 0 && root.current < root.options.length ? root.options[root.current] : root.placeholder;
+            color: !root.enabled ? Theme.text-3 : root.current >= 0 && root.current < root.options.length ? Theme.text : Theme.text-3;
+            font-size: Theme.fs-body;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+        Icon { name: "chevron-down"; size: 14px; tint: Theme.text-2; y: (parent.height - self.height) / 2; }
+    }
+    FocusRing { show: fs.has-focus; radius: Theme.r-md; }
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => { pop.show(); }
+    }
+    fs := FocusScope {
+        enabled: root.enabled;
+        focus-on-click: false;
+        key-pressed(e) => {
+            if (e.text == Key.DownArrow && root.current < root.options.length - 1) { root.selected(root.current + 1); return accept; }
+            if (e.text == Key.UpArrow && root.current > 0) { root.selected(root.current - 1); return accept; }
+            if (e.text == " " || e.text == Key.Return) { pop.show(); return accept; }
+            return reject;
+        }
+    }
+    pop := PopupWindow {
+        x: 0px;
+        y: root.height + 4px;
+        width: Math.max(root.width, 160px);
+        height: Math.min(root.options.length * 32px + 8px, 264px);
+        Rectangle {
+            background: Theme.surface;
+            border-radius: Theme.r-md;
+            border-width: 1px;
+            border-color: Theme.line-strong;
+            drop-shadow-blur: 16px;
+            drop-shadow-color: #00000066;
+            drop-shadow-offset-y: 4px;
+            Flickable {
+                x: 0px;
+                y: 4px;
+                height: parent.height - 8px;
+                content-height: root.options.length * 32px;
+                for opt[i] in root.options: Rectangle {
+                    x: 4px;
+                    y: i * 32px;
+                    width: parent.width - 8px;
+                    height: 32px;
+                    border-radius: Theme.r-sm;
+                    background: item-ta.has-hover ? Theme.surface-3 : (i == root.current ? Theme.accent-soft : transparent);
+                    accessible-role: list-item;
+                    accessible-label: opt;
+                    accessible-action-default => { root.selected(i); }
+                    HorizontalLayout {
+                        padding-left: 10px;
+                        padding-right: 10px;
+                        spacing: 8px;
+                        Text {
+                            text: opt;
+                            color: Theme.text;
+                            font-size: Theme.fs-body;
+                            font-weight: i == root.current ? 600 : 400;
+                            vertical-alignment: center;
+                            overflow: elide;
+                        }
+                        if i == root.current: Icon { name: "check"; size: 14px; tint: Theme.accent; y: (parent.height - self.height) / 2; }
+                    }
+                    item-ta := TouchArea { clicked => { root.selected(i); } }
+                }
+            }
+        }
+    }
+}

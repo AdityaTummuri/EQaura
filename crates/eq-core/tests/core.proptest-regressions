@@ -1,0 +1,9 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 498e16c774bdda1df78d6bb8b9a363ce22b7225663e61eddec0fdc110cb98614 # shrinks to p = Profile { schema: 1, name: "Untitled", preamp: Preamp { auto: true, db: 0.0 }, filters: [Filter { kind: Peaking, freq_hz: 12401.885298772193, gain_db: 0.0, q: 0.05, on: false, channel: Both }], headphone: None, hearing: None }
+cc a8ae097bf5e1c38fc8e6aa9d3bd8aaca867aebfdf3ca03f292e0db5373773306 # shrinks to p = Profile { schema: 1, name: "Untitled", preamp: Preamp { auto: true, db: 0.0 }, filters: [], headphone: Some(Correction { name: "x", source: "", on: true, strength: 0.9398237561464315, filters: [Filter { kind: Peaking, freq_hz: 19133.653981887623, gain_db: 11.294015641515474, q: 0.05, on: true, channel: Both }, Filter { kind: LowShelf, freq_hz: 19556.96307353172, gain_db: -13.097313675460022, q: 57.94282288057431, on: true, channel: Both }] }), hearing: Some(HearingLayer { on: true, strength: 0.7, left: [Filter { kind: LowShelf, freq_hz: 18481.362999740733, gain_db: -19.431457853641575, q: 25.41735369883294, on: true, channel: Both }, Filter { kind: Peaking, freq_hz: 18065.19273589268, gain_db: 24.840675703560628, q: 7.220469883250078, on: true, channel: Both }], right: [] }) }
+cc 785d0b6b5f13642cbd9e66b90d6df9a675478b6d4543b3d7385e29b74343ab1c # shrinks to p = Profile { schema: 1, name: "Untitled", preamp: Preamp { auto: true, db: 0.0 }, filters: [Filter { kind: LowShelf, freq_hz: 29778.832042772312, gain_db: -32.71686299567958, q: 10.844716419072574, on: true, channel: Both }], headphone: None, hearing: None }

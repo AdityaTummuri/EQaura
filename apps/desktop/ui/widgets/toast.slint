@@ -1,0 +1,101 @@
+import { Theme } from "../theme.slint";
+import { Tone } from "../model.slint";
+import { Icon } from "icon.slint";
+import { Btn } from "button.slint";
+
+export component Toast inherits Rectangle {
+    in property <string> text;
+    in property <Tone> tone: Tone.neutral;
+    in property <bool> can-undo: false;
+    callback undo();
+    callback dismiss();
+
+    height: 44px;
+    width: Math.min(l.preferred-width, 560px);
+    border-radius: Theme.r-lg;
+    background: Theme.dark ? Theme.surface-3 : #25241F;
+    border-width: 1px;
+    border-color: Theme.dark ? Theme.line-strong : #25241F;
+    drop-shadow-blur: 24px;
+    drop-shadow-color: #00000055;
+    drop-shadow-offset-y: 6px;
+    accessible-role: AccessibleRole.text;
+    accessible-label: root.text;
+
+    private property <color> fg: Theme.dark ? Theme.text : #F4F2EC;
+    l := HorizontalLayout {
+        padding-left: 14px;
+        padding-right: root.can-undo ? 6px : 16px;
+        spacing: 10px;
+        Icon {
+            name: Theme.tone-icon(root.tone);
+            size: 18px;
+            y: (parent.height - self.height) / 2;
+            tint: root.tone == Tone.neutral ? root.fg : (Theme.dark ? Theme.tone-color(root.tone) : (root.tone == Tone.good ? #6FD3A0 : root.tone == Tone.warning ? #E9C65A : root.tone == Tone.danger ? #F58B91 : #8FBFF7));
+        }
+        Text {
+            text: root.text;
+            color: root.fg;
+            font-size: Theme.fs-body;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+        if root.can-undo: Rectangle {
+            width: 64px;
+            ta := TouchArea { mouse-cursor: pointer; clicked => { root.undo(); } }
+            Rectangle {
+                y: (parent.height - self.height) / 2;
+                height: 30px;
+                border-radius: Theme.r-sm;
+                background: ta.pressed ? #FFFFFF30 : ta.has-hover ? #FFFFFF1C : transparent;
+                Text {
+                    text: "Undo";
+                    font-size: Theme.fs-body;
+                    font-weight: 600;
+                    color: Theme.dark ? Theme.accent : #F6A25A;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+            accessible-role: button;
+            accessible-label: "Undo";
+            accessible-action-default => { root.undo(); }
+        }
+    }
+}
+
+// Centered modal. Clicking outside or pressing Escape asks to close.
+export component Modal inherits Rectangle {
+    in property <string> title;
+    in property <length> card-width: 420px;
+    callback dismissed();
+    background: Theme.scrim;
+    TouchArea { clicked => { root.dismissed(); } }
+    Rectangle {
+        width: Math.min(root.card-width, parent.width - 48px);
+        height: inner.preferred-height;
+        x: (parent.width - self.width) / 2;
+        y: Math.max(24px, (parent.height - self.height) / 2 - 40px);
+        background: Theme.surface;
+        border-radius: Theme.r-lg + 2px;
+        border-width: 1px;
+        border-color: Theme.line-strong;
+        drop-shadow-blur: 40px;
+        drop-shadow-color: #00000070;
+        drop-shadow-offset-y: 12px;
+        TouchArea { }
+        accessible-role: groupbox;
+        accessible-label: root.title;
+        inner := VerticalLayout {
+            padding: 24px;
+            spacing: 16px;
+            Text {
+                text: root.title;
+                color: Theme.text;
+                font-size: Theme.fs-lead + 1px;
+                font-weight: 600;
+            }
+            @children
+        }
+    }
+}

@@ -1,0 +1,17 @@
+import { Theme } from "../theme.slint";
+
+// Keyboard focus outline, drawn just outside the parent. Only shown for keyboard focus.
+export component FocusRing inherits Rectangle {
+    in property <bool> show;
+    in property <length> radius: 8px;
+    if root.show: Rectangle {
+        x: -3px;
+        y: -3px;
+        width: parent.width + 6px;
+        height: parent.height + 6px;
+        border-radius: root.radius + 3px;
+        border-width: 2px;
+        border-color: Theme.focus;
+        background: transparent;
+    }
+}

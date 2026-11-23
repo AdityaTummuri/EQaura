@@ -1,0 +1,404 @@
+import { Model, EarBar, Tone } from "../model.slint";
+import { Theme } from "../theme.slint";
+import { Fmt } from "../format.slint";
+import { Card, Badge, Divider } from "../widgets/card.slint";
+import { Btn } from "../widgets/button.slint";
+import { Toggle } from "../widgets/toggle.slint";
+import { HSlider } from "../widgets/slider.slint";
+import { Icon } from "../widgets/icon.slint";
+import { ScrollArea } from "../widgets/scroll.slint";
+import { PageFrame, PageHeader } from "../widgets/page.slint";
+
+component StepDot inherits Rectangle {
+    in property <int> number;
+    in property <string> text;
+    in property <bool> active;
+    in property <bool> done;
+    horizontal-stretch: 0;
+    preferred-width: l.preferred-width;
+    accessible-role: AccessibleRole.text;
+    accessible-label: "Step \{root.number}, \{root.text}" + (root.active ? ", current" : root.done ? ", done" : "");
+    l := HorizontalLayout {
+        spacing: 8px;
+        Rectangle {
+            width: 24px;
+            height: 24px;
+            y: (parent.height - self.height) / 2;
+            border-radius: 12px;
+            background: root.active ? Theme.accent : root.done ? Theme.accent-soft : transparent;
+            border-width: root.active || root.done ? 0px : 1.5px;
+            border-color: Theme.line-strong;
+            if root.done && !root.active: Icon { name: "check"; size: 14px; tint: Theme.accent; x: 5px; y: 5px; }
+            if !root.done || root.active: Text {
+                text: "\{root.number}";
+                color: root.active ? Theme.accent-on : Theme.text-2;
+                font-size: Theme.fs-small;
+                font-weight: 700;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+        Text {
+            text: root.text;
+            color: root.active ? Theme.text : Theme.text-2;
+            font-size: Theme.fs-body;
+            font-weight: root.active ? 600 : 500;
+            vertical-alignment: center;
+        }
+    }
+}
+
+component Check inherits Rectangle {
+    in property <string> title;
+    in property <string> body;
+    in property <string> icon;
+    preferred-height: l.preferred-height;
+    l := HorizontalLayout {
+        spacing: 14px;
+        Rectangle {
+            width: 32px;
+            height: 32px;
+            y: 0px;
+            border-radius: 16px;
+            background: Theme.surface-3;
+            Icon { name: root.icon; size: 18px; tint: Theme.text-2; x: 7px; y: 7px; }
+        }
+        VerticalLayout {
+            spacing: 2px;
+            alignment: center;
+            Text { text: root.title; color: Theme.text; font-size: Theme.fs-body; font-weight: 600; wrap: word-wrap; }
+            Text { text: root.body; color: Theme.text-2; font-size: Theme.fs-body; wrap: word-wrap; }
+        }
+    }
+}
+
+component Intro inherits Card {
+    VerticalLayout {
+        padding: 28px;
+        spacing: 20px;
+        VerticalLayout {
+            spacing: 6px;
+            Text { text: "Find out how you hear, one ear at a time"; color: Theme.text; font-size: Theme.fs-lead + 3px; font-weight: 700; wrap: word-wrap; }
+            Text {
+                text: "EQaura plays short, quiet tones at a few pitches. You say whether you can hear each one. It then suggests a gentle correction that you can switch on or off at any time.";
+                color: Theme.text-2;
+                font-size: Theme.fs-body + 1px;
+                wrap: word-wrap;
+            }
+        }
+        VerticalLayout {
+            spacing: 14px;
+            Check { icon: "hearing"; title: "Pick a quiet room"; body: "Background noise makes quiet tones hard to hear and will skew the result."; }
+            Check { icon: "headphones"; title: "Wear the headphones you normally listen with"; body: "The result is for this pair. Choose them as the output device first."; }
+            Check { icon: "volume"; title: "Turn the volume down low before you start"; body: "Tones begin very quietly and slowly get louder. Stop at once if anything is uncomfortable."; }
+        }
+        Rectangle {
+            preferred-height: note.preferred-height + 24px;
+            border-radius: Theme.r-md;
+            background: Theme.surface-2;
+            border-width: 1px;
+            border-color: Theme.line;
+            note := HorizontalLayout {
+                padding: 12px;
+                spacing: 10px;
+                Icon { name: "info"; size: 18px; tint: Theme.text-2; y: 0px; }
+                Text {
+                    text: "This is not a medical test. It cannot find or rule out hearing problems. If you notice hearing loss, ringing or pain, please see a doctor or an audiologist.";
+                    color: Theme.text-2;
+                    font-size: Theme.fs-body;
+                    wrap: word-wrap;
+                }
+            }
+        }
+        HorizontalLayout {
+            spacing: 12px;
+            alignment: start;
+            Btn { text: "Start the test"; icon: "play"; kind: "primary"; clicked => { Model.hearing-start(); } }
+            Text { text: "About 5 minutes"; color: Theme.text-2; font-size: Theme.fs-body; vertical-alignment: center; horizontal-stretch: 0; }
+        }
+    }
+}
+
+component BigAnswer inherits Rectangle {
+    in property <string> text;
+    in property <string> icon;
+    in property <bool> primary: false;
+    callback clicked();
+    height: 64px;
+    border-radius: Theme.r-lg;
+    border-width: root.primary ? 0px : 1px;
+    border-color: Theme.line-strong;
+    background: root.primary ? (ta.pressed ? Theme.accent-press : ta.has-hover ? Theme.accent-hover : Theme.accent) : (ta.pressed ? Theme.surface-3 : ta.has-hover ? Theme.surface-3.with-alpha(0.7) : Theme.surface-2);
+    animate background { duration: Theme.dur-fast; }
+    accessible-role: AccessibleRole.button;
+    accessible-label: root.text;
+    accessible-action-default => { root.clicked(); }
+    HorizontalLayout {
+        alignment: center;
+        spacing: 10px;
+        Icon { name: root.icon; size: 22px; y: (parent.height - self.height) / 2; tint: root.primary ? Theme.accent-on : Theme.text; }
+        Text {
+            text: root.text;
+            color: root.primary ? Theme.accent-on : Theme.text;
+            font-size: Theme.fs-lead + 2px;
+            font-weight: 600;
+            vertical-alignment: center;
+        }
+    }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+    fs := FocusScope {
+        focus-on-click: false;
+        key-pressed(e) => {
+            if (e.text == " " || e.text == Key.Return) { root.clicked(); return accept; }
+            return reject;
+        }
+    }
+    if fs.has-focus: Rectangle {
+        x: -3px;
+        y: -3px;
+        width: parent.width + 6px;
+        height: parent.height + 6px;
+        border-radius: Theme.r-lg + 3px;
+        border-width: 2px;
+        border-color: Theme.focus;
+    }
+}
+
+component Running inherits Card {
+    VerticalLayout {
+        padding: 28px;
+        spacing: 22px;
+        HorizontalLayout {
+            spacing: 12px;
+            VerticalLayout {
+                spacing: 2px;
+                Text { text: "Now testing"; color: Theme.text-2; font-size: Theme.fs-body; }
+                Text { text: Model.hearing-ear; color: Theme.text; font-size: Theme.fs-display; font-weight: 700; }
+            }
+            Rectangle { horizontal-stretch: 1; }
+            VerticalLayout {
+                alignment: center;
+                spacing: 2px;
+                Text { text: "Tone"; color: Theme.text-2; font-size: Theme.fs-body; horizontal-alignment: right; }
+                Text { text: Model.hearing-tone; color: Theme.text; font-size: Theme.fs-display; font-weight: 700; horizontal-alignment: right; }
+            }
+        }
+        VerticalLayout {
+            spacing: 8px;
+            HorizontalLayout {
+                Text { text: "Progress"; color: Theme.text-2; font-size: Theme.fs-small; }
+                Text { text: Fmt.pct(Model.hearing-progress); color: Theme.text; font-size: Theme.fs-small; font-weight: 600; horizontal-alignment: right; }
+            }
+            Rectangle {
+                height: 6px;
+                border-radius: 3px;
+                background: Theme.surface-3;
+                accessible-role: AccessibleRole.progress-indicator;
+                accessible-label: "Test progress";
+                accessible-value: Fmt.pct(Model.hearing-progress);
+                Rectangle {
+                    x: 0px;
+                    width: parent.width * Math.min(1, Math.max(0, Model.hearing-progress));
+                    border-radius: 3px;
+                    background: Theme.accent;
+                }
+            }
+        }
+        VerticalLayout {
+            spacing: 14px;
+            HorizontalLayout {
+                alignment: center;
+                spacing: 10px;
+                Badge {
+                    text: Model.hearing-playing ? "Playing a tone" : "Waiting for your answer";
+                    tone: Model.hearing-playing ? Tone.good : Tone.neutral;
+                    dot: true;
+                }
+            }
+            Text {
+                text: "Did you hear the tone?";
+                color: Theme.text;
+                font-size: Theme.fs-lead + 2px;
+                font-weight: 600;
+                horizontal-alignment: center;
+            }
+            HorizontalLayout {
+                spacing: 14px;
+                BigAnswer { text: "I hear it"; icon: "check"; primary: true; clicked => { Model.hearing-answer(true); } }
+                BigAnswer { text: "I don't"; icon: "close"; clicked => { Model.hearing-answer(false); } }
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            Btn { text: "Play the tone again"; icon: "play"; kind: "ghost"; clicked => { Model.hearing-replay(); } }
+            Rectangle { horizontal-stretch: 1; }
+            Btn { text: "Cancel the test"; kind: "ghost"; clicked => { Model.hearing-cancel(); } }
+        }
+    }
+}
+
+// Left and right bars per pitch: how many dB of boost EQaura would add (shown up to 12 dB).
+component BarChart inherits Rectangle {
+    private property <int> n: Model.hearing-bars.length;
+    private property <length> pl: 40px;
+    private property <length> label-h: 24px;
+    private property <length> top-pad: 22px;
+    private property <length> plot-h: Math.max(40px, root.height - root.label-h - root.top-pad);
+    private property <length> col-w: (root.width - root.pl) / Math.max(1, root.n);
+    private property <float> scale: 12;
+
+    for k in 4: Rectangle {
+        x: root.pl;
+        y: root.top-pad + root.plot-h - k * root.plot-h / 3;
+        width: root.width - root.pl;
+        height: 1px;
+        background: k == 0 ? Theme.line-strong : Theme.line;
+    }
+    for k in 4: Text {
+        x: 0px;
+        y: root.top-pad + root.plot-h - k * root.plot-h / 3 - 8px;
+        width: root.pl - 10px;
+        height: 16px;
+        text: k == 0 ? "0" : "+\{Math.round(k * root.scale / 3)}";
+        horizontal-alignment: right;
+        vertical-alignment: center;
+        font-size: Theme.fs-caption;
+        color: Theme.text-3;
+    }
+    for bar[i] in Model.hearing-bars: Rectangle {
+        x: root.pl + i * root.col-w;
+        width: root.col-w;
+        height: root.height;
+        accessible-role: AccessibleRole.text;
+        accessible-label: bar.tested ? "\{bar.label}: left ear \{Fmt.db(bar.left)}, right ear \{Fmt.db(bar.right)}" : "\{bar.label}: not tested";
+        Text {
+            y: root.height - root.label-h + 4px;
+            width: parent.width;
+            height: 16px;
+            text: bar.label;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+            font-size: Theme.fs-small;
+            color: Theme.text-2;
+        }
+        if bar.tested: Rectangle {
+            property <length> bw: Math.min(22px, parent.width * 0.28);
+            x: (parent.width - self.bw * 2 - 4px) / 2;
+            width: self.bw * 2 + 4px;
+            y: 0px;
+            height: parent.height;
+            Rectangle {
+                x: 0px;
+                width: parent.bw;
+                height: Math.max(2px, root.plot-h * Math.min(1, Math.max(0, bar.left / root.scale)));
+                y: root.top-pad + root.plot-h - self.height;
+                border-top-left-radius: 3px;
+                border-top-right-radius: 3px;
+                background: Theme.band-color(1);
+            }
+            Rectangle {
+                x: parent.bw + 4px;
+                width: parent.bw;
+                height: Math.max(2px, root.plot-h * Math.min(1, Math.max(0, bar.right / root.scale)));
+                y: root.top-pad + root.plot-h - self.height;
+                border-top-left-radius: 3px;
+                border-top-right-radius: 3px;
+                background: Theme.band-color(3);
+            }
+        }
+        if bar.tested: Text {
+            y: root.top-pad + root.plot-h - root.plot-h * Math.min(1, Math.max(bar.left, bar.right) / root.scale) - 18px;
+            width: parent.width;
+            height: 16px;
+            text: Fmt.whole(Math.max(bar.left, bar.right));
+            horizontal-alignment: center;
+            vertical-alignment: center;
+            font-size: Theme.fs-caption;
+            font-weight: 600;
+            color: Theme.text;
+        }
+        if !bar.tested: Text {
+            y: root.top-pad + root.plot-h - 34px;
+            width: parent.width;
+            height: 32px;
+            text: "Not\ntested";
+            horizontal-alignment: center;
+            vertical-alignment: bottom;
+            font-size: Theme.fs-caption;
+            color: Theme.text-3;
+        }
+    }
+}
+
+component Results inherits Card {
+    VerticalLayout {
+        padding: 24px;
+        spacing: 18px;
+        HorizontalLayout {
+            VerticalLayout {
+                spacing: 2px;
+                Text { text: "Your result"; color: Theme.text; font-size: Theme.fs-lead + 3px; font-weight: 700; }
+                Text { text: "Taller bars mean that ear needed more volume at that pitch."; color: Theme.text-2; font-size: Theme.fs-body; wrap: word-wrap; }
+            }
+            HorizontalLayout {
+                spacing: 16px;
+                alignment: end;
+                horizontal-stretch: 0;
+                Rectangle { width: l1.preferred-width; l1 := HorizontalLayout { spacing: 6px; Rectangle { width: 10px; height: 10px; y: (parent.height - self.height) / 2; border-radius: 2px; background: Theme.band-color(1); } Text { text: "Left ear"; color: Theme.text-2; font-size: Theme.fs-small; vertical-alignment: center; } } }
+                Rectangle { width: l2.preferred-width; l2 := HorizontalLayout { spacing: 6px; Rectangle { width: 10px; height: 10px; y: (parent.height - self.height) / 2; border-radius: 2px; background: Theme.band-color(3); } Text { text: "Right ear"; color: Theme.text-2; font-size: Theme.fs-small; vertical-alignment: center; } } }
+            }
+        }
+        BarChart { vertical-stretch: 1; min-height: 180px; }
+        Divider { }
+        VerticalLayout {
+            spacing: 14px;
+            HorizontalLayout {
+                spacing: 12px;
+                Text { text: "Strength"; color: Theme.text; font-size: Theme.fs-body; font-weight: 600; vertical-alignment: center; horizontal-stretch: 0; min-width: 64px; }
+                HSlider {
+                    value: Model.hearing-strength;
+                    label: "Hearing correction strength";
+                    changed(v) => { Model.hearing-set-strength(v); }
+                }
+                Text { text: Fmt.pct(Model.hearing-strength); color: Theme.text; font-size: Theme.fs-body; font-weight: 600; vertical-alignment: center; horizontal-alignment: right; horizontal-stretch: 0; min-width: 44px; }
+            }
+            Text { text: "Start low. A half strength correction is gentler and often sounds more natural."; color: Theme.text-2; font-size: Theme.fs-small; wrap: word-wrap; }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            Btn { text: Model.hearing-on ? "Applied" : "Use this result"; icon: "check"; kind: "primary"; enabled: Model.hearing-has-result && !Model.hearing-on; clicked => { Model.hearing-apply(); } }
+            Btn { text: "Turn off"; enabled: Model.hearing-on; clicked => { Model.hearing-set-on(false); } }
+            Rectangle { horizontal-stretch: 1; }
+            Btn { text: "Test again"; icon: "refresh"; kind: "ghost"; clicked => { Model.hearing-start(); } }
+            Btn { text: "Clear result"; icon: "trash"; kind: "danger"; clicked => { Model.hearing-clear(); } }
+        }
+    }
+}
+
+export component HearingPage inherits Rectangle {
+    PageFrame {
+        max-content: 760px;
+        ScrollArea {
+            VerticalLayout {
+                padding-top: 24px;
+                padding-bottom: 24px;
+                padding-right: 14px;
+                spacing: 20px;
+                PageHeader {
+                    title: "Hearing test";
+                    subtitle: "A short listening check that tunes the sound to your ears.";
+                }
+                HorizontalLayout {
+                    spacing: 20px;
+                    alignment: start;
+                    StepDot { number: 1; text: "Prepare"; active: Model.hearing-step == 0; done: Model.hearing-step > 0; }
+                    StepDot { number: 2; text: "Listen"; active: Model.hearing-step == 1; done: Model.hearing-step > 1; }
+                    StepDot { number: 3; text: "Result"; active: Model.hearing-step == 2; done: false; }
+                }
+                if Model.hearing-step == 0: Intro { }
+                if Model.hearing-step == 1: Running { }
+                if Model.hearing-step >= 2: Results { }
+            }
+        }
+    }
+}

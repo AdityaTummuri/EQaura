@@ -1,0 +1,221 @@
+import { Model, Tone } from "../model.slint";
+import { Theme } from "../theme.slint";
+import { Card, Badge, Divider } from "../widgets/card.slint";
+import { Btn } from "../widgets/button.slint";
+import { Segmented } from "../widgets/segmented.slint";
+import { Toggle, ToggleRow } from "../widgets/toggle.slint";
+import { Select } from "../widgets/select.slint";
+import { Field } from "../widgets/field.slint";
+import { Icon } from "../widgets/icon.slint";
+import { ScrollArea } from "../widgets/scroll.slint";
+import { PageFrame, PageHeader } from "../widgets/page.slint";
+
+component Section inherits Card {
+    in property <string> title;
+    in property <string> help;
+    preferred-height: l.preferred-height;
+    l := VerticalLayout {
+        padding: 20px;
+        spacing: 16px;
+        VerticalLayout {
+            spacing: 3px;
+            Text { text: root.title; color: Theme.text; font-size: Theme.fs-lead; font-weight: 600; accessible-role: AccessibleRole.text; }
+            if root.help != "": Text { text: root.help; color: Theme.text-2; font-size: Theme.fs-body; wrap: word-wrap; }
+        }
+        @children
+    }
+}
+
+component Labeled inherits VerticalLayout {
+    in property <string> label;
+    in property <string> hint;
+    spacing: 6px;
+    Text { text: root.label; color: Theme.text; font-size: Theme.fs-small; font-weight: 600; }
+    @children
+    if root.hint != "": Text { text: root.hint; color: Theme.text-2; font-size: Theme.fs-small; wrap: word-wrap; }
+}
+
+component ModelRowItem inherits Rectangle {
+    in property <string> name;
+    in property <bool> selected;
+    callback clicked();
+    height: 32px;
+    background: root.selected ? Theme.accent-soft : ta.pressed ? Theme.surface-3 : ta.has-hover ? Theme.surface-3.with-alpha(0.6) : transparent;
+    accessible-role: AccessibleRole.list-item;
+    accessible-label: root.name;
+    accessible-checkable: true;
+    accessible-checked: root.selected;
+    accessible-action-default => { root.clicked(); }
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 8px;
+        Text { text: root.name; color: Theme.text; font-size: Theme.fs-body; font-weight: root.selected ? 600 : 400; vertical-alignment: center; overflow: elide; }
+        if root.selected: Icon { name: "check"; size: 14px; tint: Theme.accent; y: (parent.height - self.height) / 2; }
+    }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+export component SettingsPage inherits Rectangle {
+    PageFrame {
+        max-content: 760px;
+        ScrollArea {
+            VerticalLayout {
+                padding-top: 24px;
+                padding-bottom: 24px;
+                padding-right: 14px;
+                spacing: 20px;
+                PageHeader { title: "Settings"; }
+
+                Section {
+                    title: "Appearance";
+                    help: "Match your system, or always use a dark or light look.";
+                    HorizontalLayout {
+                        alignment: start;
+                        Segmented {
+                            options: ["Match system", "Dark", "Light"];
+                            current: Model.theme-mode;
+                            label: "Appearance";
+                            selected(i) => { Model.set-theme-mode(i); }
+                        }
+                    }
+                }
+
+                Section {
+                    title: "Startup";
+                    ToggleRow {
+                        title: "Start EQaura when I sign in";
+                        help: Model.start-at-login-supported ? "The equalizer is ready as soon as you log in." : "Not available on this system. Add EQaura to your desktop's startup list yourself.";
+                        checked: Model.start-at-login;
+                        enabled: Model.start-at-login-supported;
+                        toggled(v) => { Model.set-start-at-login(v); }
+                    }
+                }
+
+                Section {
+                    title: "Assistant";
+                    help: "Choose who turns your words into suggestions. Built-in rules work offline and never send anything.";
+                    HorizontalLayout {
+                        spacing: 16px;
+                        Labeled {
+                            label: "Provider";
+                            horizontal-stretch: 1;
+                            Select {
+                                options: Model.provider-names;
+                                current: Model.provider;
+                                label: "Assistant provider";
+                                selected(i) => { Model.set-provider(i); }
+                            }
+                        }
+                        Labeled {
+                            label: "Model";
+                            horizontal-stretch: 1;
+                            visible: Model.provider != 0;
+                            Field {
+                                value: Model.provider-model;
+                                label: "Model name";
+                                placeholder: "Type a model name";
+                                enabled: Model.provider != 0;
+                                committed(t) => { Model.set-provider-model(t); }
+                            }
+                        }
+                    }
+                    if Model.provider-needs-url: Labeled {
+                        label: "Server address";
+                        Field {
+                            value: Model.provider-url;
+                            label: "Server address";
+                            placeholder: "http://localhost:11434";
+                            committed(t) => { Model.set-provider-url(t); }
+                        }
+                    }
+                    if Model.provider-needs-key: Labeled {
+                        label: "Access key";
+                        hint: Model.provider-has-key ? Model.provider-key-hint + ". EQaura never shows a saved key." : "Paste your key and press Enter. " + Model.provider-key-hint;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Field {
+                                horizontal-stretch: 1;
+                                value: "";
+                                password: true;
+                                label: "Access key";
+                                placeholder: Model.provider-has-key ? "A key is saved. Paste a new one to replace it" : "Paste your key here";
+                                committed(t) => { Model.set-provider-key(t); }
+                            }
+                            if Model.provider-has-key: Badge { y: (parent.height - self.height) / 2; text: "Key saved"; tone: Tone.good; icon: "key"; }
+                            if Model.provider-has-key: Btn { text: "Remove key"; kind: "danger"; clicked => { Model.clear-provider-key(); } }
+                        }
+                    }
+                    if Model.provider != 0: VerticalLayout {
+                        spacing: 8px;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Text { text: "Available models"; color: Theme.text; font-size: Theme.fs-small; font-weight: 600; vertical-alignment: center; }
+                            Rectangle { horizontal-stretch: 1; }
+                            Btn { text: "Load models"; icon: "refresh"; compact: true; clicked => { Model.provider-load-models(); } }
+                        }
+                        Rectangle {
+                            height: Model.provider-models.length == 0 ? 44px : Math.min(Model.provider-models.length * 32px + 2px, 162px);
+                            border-radius: Theme.r-md;
+                            border-width: 1px;
+                            border-color: Theme.line;
+                            background: Theme.surface-2;
+                            clip: true;
+                            if Model.provider-models.length == 0: Text {
+                                text: "No models loaded yet. Choose Load models, or type a model name above.";
+                                color: Theme.text-2;
+                                font-size: Theme.fs-body;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                            if Model.provider-models.length > 0: Flickable {
+                                content-height: Model.provider-models.length * 32px;
+                                interactive: false;
+                                for m[i] in Model.provider-models: ModelRowItem {
+                                    y: i * 32px;
+                                    width: parent.width;
+                                    name: m;
+                                    selected: m == Model.provider-model;
+                                    clicked => { Model.set-provider-model(m); }
+                                }
+                            }
+                        }
+                        if Model.provider-status != "": HorizontalLayout {
+                            spacing: 8px;
+                            Icon { name: Theme.tone-icon(Model.provider-status-tone); size: 16px; tint: Theme.tone-color(Model.provider-status-tone); y: (parent.height - self.height) / 2; }
+                            Text {
+                                text: Model.provider-status;
+                                color: Model.provider-status-tone == Tone.neutral ? Theme.text-2 : Theme.tone-color(Model.provider-status-tone);
+                                font-size: Theme.fs-body;
+                                wrap: word-wrap;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                }
+
+                Section {
+                    title: "Privacy";
+                    ToggleRow {
+                        title: "Share my hearing test result with the assistant";
+                        help: "Off by default. When on, the assistant sees your hearing result so it can make better suggestions. Audio never leaves this computer.";
+                        checked: Model.send-hearing;
+                        toggled(v) => { Model.set-send-hearing(v); }
+                    }
+                }
+
+                Section {
+                    title: "Your data";
+                    help: "Presets, profiles and settings are plain files on this computer.";
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: start;
+                        Btn { text: "Open data folder"; icon: "folder"; clicked => { Model.open-data-folder(); } }
+                        Btn { text: "Export diagnostics"; icon: "export"; clicked => { Model.export-diagnostics(); } }
+                    }
+                    Text { text: "Diagnostics are a small text file you can attach to a bug report. They contain no audio and no keys."; color: Theme.text-2; font-size: Theme.fs-small; wrap: word-wrap; }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,411 @@
+import { Model, Page, Tone, Band, GridLine, Slider10, Warning, PresetRow, HeadphoneRow, ChatRow, DeviceRow, HealthRow, EarBar, Credit } from "model.slint";
+import { Theme } from "theme.slint";
+import { Icon } from "widgets/icon.slint";
+import { Btn, IconBtn } from "widgets/button.slint";
+import { Badge, Divider } from "widgets/card.slint";
+import { Toast, Modal } from "widgets/toast.slint";
+import { LogoMark, Wordmark } from "widgets/logo.slint";
+import { FocusRing } from "widgets/focus.slint";
+import { EqualizerPage } from "pages/equalizer.slint";
+import { HeadphonesPage } from "pages/headphones.slint";
+import { HearingPage } from "pages/hearing.slint";
+import { AssistantPage } from "pages/assistant.slint";
+import { PresetsPage } from "pages/presets.slint";
+import { SystemPage } from "pages/system.slint";
+import { SettingsPage } from "pages/settings.slint";
+import { AboutPage } from "pages/about.slint";
+
+export { Model, Page, Tone, Band, GridLine, Slider10, Warning, PresetRow, HeadphoneRow, ChatRow, DeviceRow, HealthRow, EarBar, Credit }
+
+component NavItem inherits Rectangle {
+    in property <string> icon;
+    in property <string> text;
+    in property <bool> active;
+    in property <bool> compact;
+    callback clicked();
+    height: root.compact ? 54px : 38px;
+    border-radius: Theme.r-md;
+    background: root.active ? Theme.accent-soft : ta.pressed ? Theme.surface-3 : ta.has-hover ? Theme.surface-2.with-alpha(Theme.dark ? 0.7 : 0.9) : transparent;
+    animate background { duration: Theme.dur-fast; easing: ease-out; }
+    accessible-role: tab;
+    accessible-label: root.text;
+    accessible-checkable: true;
+    accessible-checked: root.active;
+    accessible-action-default => { root.clicked(); }
+
+    if !root.compact: HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 8px;
+        spacing: 12px;
+        Icon { name: root.icon; size: 20px; y: (parent.height - self.height) / 2; tint: root.active ? Theme.accent : Theme.text-2; }
+        Text {
+            text: root.text;
+            font-size: Theme.fs-body;
+            font-weight: root.active ? 600 : 500;
+            color: root.active ? Theme.text : Theme.text-2;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+    if root.compact: VerticalLayout {
+        alignment: center;
+        spacing: 4px;
+        Icon { name: root.icon; size: 20px; x: (parent.width - self.width) / 2; tint: root.active ? Theme.accent : Theme.text-2; }
+        Text {
+            text: root.text;
+            font-size: Theme.fs-caption;
+            font-weight: root.active ? 600 : 500;
+            color: root.active ? Theme.text : Theme.text-2;
+            horizontal-alignment: center;
+            overflow: elide;
+        }
+    }
+    if root.active && !root.compact: Rectangle {
+        x: 0px;
+        y: 10px;
+        width: 3px;
+        height: parent.height - 20px;
+        border-radius: 2px;
+        background: Theme.accent;
+    }
+    FocusRing { show: fs.has-focus; radius: Theme.r-md; }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+    fs := FocusScope {
+        focus-on-click: false;
+        key-pressed(e) => {
+            if (e.text == " " || e.text == Key.Return) { root.clicked(); return accept; }
+            return reject;
+        }
+    }
+}
+
+component Rail inherits Rectangle {
+    in property <bool> compact;
+    width: root.compact ? 80px : 200px;
+    background: Theme.rail;
+    Rectangle {
+        x: parent.width - 1px;
+        width: 1px;
+        background: Theme.line;
+    }
+    VerticalLayout {
+        padding: root.compact ? 6px : 12px;
+        padding-top: 0px;
+        spacing: 2px;
+        Rectangle {
+            height: 60px;
+            if !root.compact: HorizontalLayout {
+                padding-left: 8px;
+                spacing: 10px;
+                alignment: start;
+                LogoMark { size: 30px; y: (parent.height - self.height) / 2; }
+                Wordmark { size: 18px; }
+            }
+            if root.compact: LogoMark { size: 32px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+            accessible-role: text;
+            accessible-label: "EQaura";
+        }
+        NavItem { icon: "eq"; text: "Equalizer"; compact: root.compact; active: Model.page == Page.equalizer; clicked => { Model.page = Page.equalizer; } }
+        NavItem { icon: "headphones"; text: "Headphones"; compact: root.compact; active: Model.page == Page.headphones; clicked => { Model.page = Page.headphones; } }
+        NavItem { icon: "hearing"; text: "Hearing test"; compact: root.compact; active: Model.page == Page.hearing; clicked => { Model.page = Page.hearing; } }
+        NavItem { icon: "assistant"; text: "Assistant"; compact: root.compact; active: Model.page == Page.assistant; clicked => { Model.page = Page.assistant; } }
+        NavItem { icon: "presets"; text: "Presets"; compact: root.compact; active: Model.page == Page.presets; clicked => { Model.page = Page.presets; } }
+        Rectangle { height: 14px; Divider { y: 7px; } }
+        NavItem { icon: "system"; text: "System"; compact: root.compact; active: Model.page == Page.system; clicked => { Model.page = Page.system; } }
+        NavItem { icon: "settings"; text: "Settings"; compact: root.compact; active: Model.page == Page.settings; clicked => { Model.page = Page.settings; } }
+        NavItem { icon: "about"; text: "About"; compact: root.compact; active: Model.page == Page.about; clicked => { Model.page = Page.about; } }
+        Rectangle { vertical-stretch: 1; }
+        HorizontalLayout {
+            height: 28px;
+            padding-left: root.compact ? 0px : 8px;
+            Text {
+                text: root.compact ? "v" + Model.version : "Version " + Model.version;
+                color: Theme.text-3;
+                font-size: Theme.fs-caption;
+                horizontal-alignment: root.compact ? center : left;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+component PowerSwitch inherits Rectangle {
+    horizontal-stretch: 0;
+    width: 74px;
+    height: 32px;
+    border-radius: 16px;
+    border-width: Model.enabled ? 0px : 1px;
+    border-color: Theme.line-strong;
+    background: Model.enabled ? (ta.pressed ? Theme.accent-press : ta.has-hover ? Theme.accent-hover : Theme.accent) : (ta.pressed ? Theme.surface-3 : ta.has-hover ? Theme.surface-3 : Theme.surface-2);
+    animate background { duration: Theme.dur; easing: ease-out; }
+    accessible-role: switch;
+    accessible-label: "Equalizer power";
+    accessible-checkable: true;
+    accessible-checked: Model.enabled;
+    accessible-action-default => { Model.set-enabled(!Model.enabled); }
+    HorizontalLayout {
+        alignment: center;
+        spacing: 6px;
+        padding-left: 4px;
+        Icon { name: "power"; size: 16px; y: (parent.height - self.height) / 2; tint: Model.enabled ? Theme.accent-on : Theme.text-2; }
+        Text {
+            text: Model.enabled ? "On" : "Off";
+            font-size: Theme.fs-body;
+            font-weight: 600;
+            color: Model.enabled ? Theme.accent-on : Theme.text-2;
+            vertical-alignment: center;
+        }
+    }
+    FocusRing { show: fs.has-focus; radius: 16px; }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { Model.set-enabled(!Model.enabled); } }
+    fs := FocusScope {
+        focus-on-click: false;
+        key-pressed(e) => {
+            if (e.text == " " || e.text == Key.Return) { Model.set-enabled(!Model.enabled); return accept; }
+            return reject;
+        }
+    }
+}
+
+// Press and hold to hear the flat sound; a quick click toggles it.
+component CompareButton inherits Rectangle {
+    private property <bool> held;
+    private property <bool> was-on;
+    horizontal-stretch: 0;
+    height: 32px;
+    width: 104px;
+    border-radius: Theme.r-md;
+    border-width: 1px;
+    border-color: Model.comparing ? Theme.accent : Theme.line-strong;
+    background: Model.comparing ? Theme.accent-soft : ta.pressed ? Theme.surface-3 : ta.has-hover ? Theme.surface-2 : Theme.surface;
+    animate background { duration: Theme.dur-fast; }
+    accessible-role: button;
+    accessible-label: "Compare with the flat sound. Hold to listen, or click to switch.";
+    accessible-checkable: true;
+    accessible-checked: Model.comparing;
+    accessible-action-default => { Model.set-comparing(!Model.comparing); }
+    HorizontalLayout {
+        alignment: center;
+        spacing: 6px;
+        Icon { name: "compare"; size: 16px; y: (parent.height - self.height) / 2; tint: Model.comparing ? Theme.accent : Theme.text-2; }
+        Text {
+            text: Model.comparing ? "Flat sound" : "Compare";
+            font-size: Theme.fs-body;
+            font-weight: 500;
+            color: Model.comparing ? Theme.text : Theme.text;
+            vertical-alignment: center;
+        }
+    }
+    FocusRing { show: fs.has-focus; radius: Theme.r-md; }
+    tm := Timer {
+        interval: 350ms;
+        running: false;
+        triggered => { root.held = true; self.running = false; }
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down && e.button == PointerEventButton.left) {
+                root.was-on = Model.comparing;
+                root.held = false;
+                tm.running = true;
+                Model.set-comparing(true);
+            }
+            if (e.kind == PointerEventKind.up || e.kind == PointerEventKind.cancel) {
+                tm.running = false;
+                if (root.held || root.was-on) { Model.set-comparing(false); }
+            }
+        }
+    }
+    fs := FocusScope {
+        focus-on-click: false;
+        key-pressed(e) => {
+            if (e.text == " " || e.text == Key.Return) { Model.set-comparing(!Model.comparing); return accept; }
+            return reject;
+        }
+    }
+}
+
+component TopBar inherits Rectangle {
+    in property <bool> compact;
+    height: 56px;
+    Rectangle {
+        y: parent.height - 1px;
+        height: 1px;
+        background: Theme.line;
+    }
+    HorizontalLayout {
+        padding-left: 20px;
+        padding-right: 16px;
+        spacing: 12px;
+        // output device
+        Rectangle {
+            min-width: 120px;
+            preferred-width: dev-l.preferred-width;
+            horizontal-stretch: 0;
+            max-width: 280px;
+            accessible-role: text;
+            accessible-label: "Output device: " + Model.device-name;
+            dev-l := HorizontalLayout {
+                spacing: 10px;
+                Icon { name: "headphones"; size: 20px; y: (parent.height - self.height) / 2; tint: Theme.text-2; }
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 1px;
+                    Text { text: "Output"; font-size: Theme.fs-caption; color: Theme.text-3; }
+                    Text { text: Model.device-name; font-size: Theme.fs-body; font-weight: 600; color: Theme.text; overflow: elide; }
+                }
+            }
+        }
+        Rectangle {
+            horizontal-stretch: 0;
+            preferred-width: pill.preferred-width;
+            pill := Badge {
+                y: (parent.height - self.height) / 2;
+                text: Model.engine-status;
+                tone: Model.engine-tone;
+                dot: true;
+            }
+        }
+        Rectangle { horizontal-stretch: 1; min-width: 0px; }
+        // profile
+        Rectangle {
+            min-width: 90px;
+            preferred-width: prof.preferred-width;
+            horizontal-stretch: 0;
+            accessible-role: text;
+            accessible-label: "Profile " + Model.profile-name + (Model.profile-dirty ? ", unsaved changes" : "");
+            prof := HorizontalLayout {
+                spacing: 8px;
+                Text {
+                    text: Model.profile-name;
+                    font-size: Theme.fs-body;
+                    font-weight: 600;
+                    color: Theme.text;
+                    vertical-alignment: center;
+                    overflow: elide;
+                    max-width: 220px;
+                }
+                if Model.profile-dirty: Rectangle {
+                    width: 8px;
+                    height: 8px;
+                    y: (parent.height - self.height) / 2;
+                    border-radius: 4px;
+                    background: Theme.accent;
+                }
+                if Model.profile-dirty && !root.compact: Text {
+                    text: "Unsaved";
+                    font-size: Theme.fs-small;
+                    color: Theme.text-2;
+                    vertical-alignment: center;
+                }
+            }
+        }
+        Rectangle { width: 1px; background: Theme.line; height: 24px; y: (parent.height - self.height) / 2; }
+        IconBtn { y: (parent.height - self.height) / 2; icon: "undo"; label: "Undo"; enabled: Model.can-undo; clicked => { Model.undo(); } }
+        IconBtn { y: (parent.height - self.height) / 2; icon: "redo"; label: "Redo"; enabled: Model.can-redo; clicked => { Model.redo(); } }
+        CompareButton { y: (parent.height - self.height) / 2; }
+        PowerSwitch { y: (parent.height - self.height) / 2; }
+    }
+}
+
+export component AppWindow inherits Window {
+    in property <image> app-icon;
+    title: "EQaura";
+    icon: root.app-icon;
+    min-width: 900px;
+    min-height: 600px;
+    preferred-width: 1180px;
+    preferred-height: 760px;
+    background: Theme.bg;
+    default-font-size: 13px;
+
+    private property <bool> compact: root.width < 1040px;
+
+    init => { shortcuts.focus(); }
+
+    shortcuts := FocusScope {
+        focus-on-click: false;
+        key-pressed(e) => {
+            if ((e.modifiers.control || e.modifiers.meta) && (e.text == "z" || e.text == "Z")) {
+                if (e.modifiers.shift) { Model.redo(); } else { Model.undo(); }
+                return accept;
+            }
+            if ((e.modifiers.control || e.modifiers.meta) && (e.text == "y" || e.text == "Y")) { Model.redo(); return accept; }
+            return reject;
+        }
+        HorizontalLayout {
+            x: 0px;
+            y: 0px;
+            width: parent.width;
+            height: parent.height;
+            Rail { compact: root.compact; }
+            VerticalLayout {
+                TopBar { compact: root.compact; }
+                Rectangle {
+                    vertical-stretch: 1;
+                    clip: true;
+                    if Model.page == Page.equalizer: EqualizerPage { }
+                    if Model.page == Page.headphones: HeadphonesPage { }
+                    if Model.page == Page.hearing: HearingPage { }
+                    if Model.page == Page.assistant: AssistantPage { }
+                    if Model.page == Page.presets: PresetsPage { }
+                    if Model.page == Page.system: SystemPage { }
+                    if Model.page == Page.settings: SettingsPage { }
+                    if Model.page == Page.about: AboutPage { }
+                }
+            }
+        }
+    }
+
+    // toast
+    if Model.toast != "": Toast {
+        text: Model.toast;
+        tone: Model.toast-tone;
+        can-undo: Model.toast-can-undo;
+        x: (parent.width - self.width) / 2 + (root.compact ? 40px : 100px);
+        y: parent.height - self.height - 24px;
+        undo => { Model.undo(); }
+    }
+
+    // name dialog
+    if Model.name-dialog: Modal {
+        width: parent.width;
+        height: parent.height;
+        title: Model.name-dialog-title;
+        dismissed => { Model.name-dialog-cancel(); }
+        Rectangle {
+            height: 36px;
+            border-radius: Theme.r-md;
+            border-width: 1px;
+            border-color: Theme.accent;
+            background: Theme.surface-2;
+            accessible-role: text-input;
+            accessible-label: Model.name-dialog-title;
+            name-input := TextInput {
+                x: 12px;
+                width: parent.width - 24px;
+                text <=> Model.name-dialog-text;
+                font-size: Theme.fs-body + 1px;
+                color: Theme.text;
+                vertical-alignment: center;
+                single-line: true;
+                accessible-role: none;
+                selection-background-color: Theme.accent.with-alpha(0.35);
+                selection-foreground-color: Theme.text;
+                init => { self.focus(); self.select-all(); }
+                accepted => { Model.name-dialog-accept(self.text); }
+                key-pressed(e) => {
+                    if (e.text == Key.Escape) { Model.name-dialog-cancel(); return accept; }
+                    return reject;
+                }
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: end;
+            Btn { text: "Cancel"; clicked => { Model.name-dialog-cancel(); } }
+            Btn { text: "Save"; kind: "primary"; enabled: Model.name-dialog-text != ""; clicked => { Model.name-dialog-accept(Model.name-dialog-text); } }
+        }
+    }
+}

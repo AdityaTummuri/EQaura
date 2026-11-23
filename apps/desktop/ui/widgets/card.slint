@@ -1,0 +1,71 @@
+import { Theme } from "../theme.slint";
+import { Tone } from "../model.slint";
+import { Icon } from "icon.slint";
+
+export component Card inherits Rectangle {
+    in property <bool> raised: false;
+    background: root.raised ? Theme.surface-2 : Theme.surface;
+    border-radius: Theme.r-lg;
+    border-width: 1px;
+    border-color: Theme.line;
+    drop-shadow-blur: Theme.dark ? 0px : 6px;
+    drop-shadow-color: #1B1A1710;
+    drop-shadow-offset-y: 1px;
+    @children
+}
+
+export component Divider inherits Rectangle {
+    height: 1px;
+    background: Theme.line;
+}
+
+// Small status label. Always has text, so colour is never the only signal.
+export component Badge inherits Rectangle {
+    in property <string> text;
+    in property <Tone> tone: Tone.neutral;
+    in property <bool> dot: false;
+    in property <string> icon;
+    horizontal-stretch: 0;
+    height: 22px;
+    min-width: l.min-width;
+    preferred-width: l.preferred-width;
+    border-radius: 11px;
+    background: root.tone == Tone.neutral ? Theme.surface-3 : Theme.tone-soft(root.tone);
+    accessible-role: AccessibleRole.text;
+    accessible-label: root.text;
+    l := HorizontalLayout {
+        padding-left: root.dot || root.icon != "" ? 8px : 10px;
+        padding-right: 10px;
+        spacing: 6px;
+        alignment: center;
+        if root.dot: Rectangle {
+            width: 6px;
+            height: 6px;
+            y: (parent.height - self.height) / 2;
+            border-radius: 3px;
+            background: Theme.tone-color(root.tone);
+        }
+        if root.icon != "": Icon { name: root.icon; size: 13px; tint: Theme.tone-color(root.tone); y: (parent.height - self.height) / 2; }
+        Text {
+            text: root.text;
+            color: root.tone == Tone.neutral ? Theme.text-2 : Theme.tone-color(root.tone);
+            font-size: Theme.fs-small;
+            font-weight: 500;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+}
+
+// Section heading used inside pages.
+export component Heading inherits Text {
+    font-size: Theme.fs-lead;
+    font-weight: 600;
+    color: Theme.text;
+    overflow: elide;
+}
+export component Caption inherits Text {
+    font-size: Theme.fs-small;
+    color: Theme.text-2;
+    wrap: word-wrap;
+}

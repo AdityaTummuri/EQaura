@@ -1,0 +1,84 @@
+import { Theme } from "../theme.slint";
+
+// Keeps page content to a comfortable reading width and centres it.
+export component PageFrame inherits Rectangle {
+    in property <length> max-content: 900px;
+    HorizontalLayout {
+        alignment: center;
+        padding-left: 24px;
+        padding-right: 24px;
+        Rectangle {
+            min-width: 300px;
+            preferred-width: root.max-content;
+            max-width: root.max-content;
+            horizontal-stretch: 1;
+            @children
+        }
+    }
+}
+
+export component PageHeader inherits Rectangle {
+    in property <string> title;
+    in property <string> subtitle;
+    preferred-height: l.preferred-height;
+    min-height: l.min-height;
+    l := HorizontalLayout {
+        spacing: 16px;
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: 4px;
+            Text {
+                text: root.title;
+                color: Theme.text;
+                font-size: Theme.fs-title;
+                font-weight: 700;
+                overflow: elide;
+                accessible-role: AccessibleRole.text;
+            }
+            if root.subtitle != "": Text {
+                text: root.subtitle;
+                color: Theme.text-2;
+                font-size: Theme.fs-body;
+                wrap: word-wrap;
+            }
+        }
+        @children
+    }
+}
+
+// Friendly message for empty lists and missing data.
+export component EmptyState inherits Rectangle {
+    in property <string> title;
+    in property <string> body;
+    VerticalLayout {
+        alignment: center;
+        spacing: 12px;
+        padding: 24px;
+        Rectangle {
+            height: 48px;
+            Rectangle {
+                width: 48px;
+                height: 48px;
+                x: (parent.width - self.width) / 2;
+                border-radius: 24px;
+                background: Theme.surface-3;
+                @children
+            }
+        }
+        Text {
+            text: root.title;
+            color: Theme.text;
+            font-size: Theme.fs-lead;
+            font-weight: 600;
+            horizontal-alignment: center;
+            wrap: word-wrap;
+        }
+        Text {
+            text: root.body;
+            color: Theme.text-2;
+            font-size: Theme.fs-body;
+            horizontal-alignment: center;
+            wrap: word-wrap;
+        }
+    }
+}

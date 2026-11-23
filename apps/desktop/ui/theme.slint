@@ -1,0 +1,114 @@
+// Design tokens for EQaura.
+//
+// Accent: ember orange. It echoes the warm glow of valve amplifiers and VU meter
+// back-lights, it is rare in settings apps, and it sits well on warm neutrals.
+// It is reserved for "what you hear" (the curve), the power state and primary actions.
+import { Palette } from "std-widgets.slint";
+import { Model, Tone } from "model.slint";
+
+export global Theme {
+    // ---- scheme -------------------------------------------------------------
+    out property <bool> dark: Model.theme-mode == 1 || (Model.theme-mode == 0 && Palette.color-scheme == ColorScheme.dark);
+
+    // ---- surfaces -----------------------------------------------------------
+    out property <color> bg: dark ? #131312 : #F2F0EB;
+    out property <color> rail: dark ? #0E0E0D : #E9E6DF;
+    out property <color> surface: dark ? #1A1A18 : #FFFFFF;
+    out property <color> surface-2: dark ? #232321 : #F5F3EE;
+    out property <color> surface-3: dark ? #2E2E2B : #E9E6DF;
+    out property <color> sunken: dark ? #0F0F0E : #FBFAF7;
+    out property <color> scrim: dark ? #000000A8 : #1B1A1766;
+    out property <color> line: dark ? #2A2A27 : #E2DED5;
+    out property <color> line-strong: dark ? #3E3E3A : #C9C4B8;
+    out property <color> grid: dark ? #1C1C1A : #EEEBE4;
+    out property <color> grid-strong: dark ? #2D2D2A : #D8D4C9;
+
+    // ---- text ---------------------------------------------------------------
+    out property <color> text: dark ? #EDEBE5 : #1B1A17;
+    out property <color> text-2: dark ? #ABA89F : #55524A;
+    out property <color> text-3: dark ? #9C998F : #65625A;
+
+    // ---- accent -------------------------------------------------------------
+    out property <color> accent: dark ? #F0903E : #A84A08;
+    out property <color> accent-hover: dark ? #F6A25A : #B9540E;
+    out property <color> accent-press: dark ? #DB7F30 : #8E3E05;
+    out property <color> accent-on: dark ? #1C0F03 : #FFFFFF;
+    out property <color> accent-line: dark ? #F2994A : #D1600C;
+    out property <color> accent-soft: accent.with-alpha(dark ? 0.15 : 0.10);
+    out property <color> focus: dark ? #F6A25A : #A84A08;
+
+    // ---- tones --------------------------------------------------------------
+    out property <color> good: dark ? #5FC48E : #17693F;
+    out property <color> warn: dark ? #E3BE45 : #7F5D00;
+    out property <color> danger: dark ? #F5808A : #AB2A36;
+    out property <color> busy: dark ? #7DB4F2 : #1F5CA6;
+
+    // ---- type scale (px) ----------------------------------------------------
+    out property <length> fs-caption: 11px;
+    out property <length> fs-small: 12px;
+    out property <length> fs-body: 13px;
+    out property <length> fs-lead: 15px;
+    out property <length> fs-title: 20px;
+    out property <length> fs-display: 28px;
+
+    // ---- shape and motion ---------------------------------------------------
+    out property <length> r-sm: 6px;
+    out property <length> r-md: 8px;
+    out property <length> r-lg: 12px;
+    out property <duration> dur-fast: 120ms;
+    out property <duration> dur: 160ms;
+
+    pure public function tone-color(t: Tone) -> color {
+        if (t == Tone.good) { return good; }
+        if (t == Tone.warning) { return warn; }
+        if (t == Tone.danger) { return danger; }
+        if (t == Tone.busy) { return busy; }
+        return text-2;
+    }
+    pure public function tone-soft(t: Tone) -> color {
+        return tone-color(t).with-alpha(dark ? 0.16 : 0.12);
+    }
+    pure public function tone-icon(t: Tone) -> string {
+        if (t == Tone.good) { return "check-circle"; }
+        if (t == Tone.warning) { return "warning"; }
+        if (t == Tone.danger) { return "alert"; }
+        if (t == Tone.busy) { return "refresh"; }
+        return "info";
+    }
+
+    // Eight calm hues for bands. Every band also has a number, so colour is never the only cue.
+    pure public function band-color(i: int) -> color {
+        if (dark) {
+            if (i < 0) { return text-3; }
+            if (Math.mod(i, 8) == 0) { return #4DBFAE; }
+            if (Math.mod(i, 8) == 1) { return #69A6F0; }
+            if (Math.mod(i, 8) == 2) { return #A78DEB; }
+            if (Math.mod(i, 8) == 3) { return #E889B8; }
+            if (Math.mod(i, 8) == 4) { return #8CCB62; }
+            if (Math.mod(i, 8) == 5) { return #E67A86; }
+            if (Math.mod(i, 8) == 6) { return #55C3DD; }
+            return #CDBA6E;
+        }
+        if (i < 0) { return text-3; }
+        if (Math.mod(i, 8) == 0) { return #12806F; }
+        if (Math.mod(i, 8) == 1) { return #2B6FCB; }
+        if (Math.mod(i, 8) == 2) { return #6B4FC4; }
+        if (Math.mod(i, 8) == 3) { return #BE3F83; }
+        if (Math.mod(i, 8) == 4) { return #387F18; }
+        if (Math.mod(i, 8) == 5) { return #C03C4F; }
+        if (Math.mod(i, 8) == 6) { return #0F7690; }
+        return #7D6812;
+    }
+    pure public function band-name(i: int) -> string {
+        if (Math.mod(i, 8) == 0) { return "teal"; }
+        if (Math.mod(i, 8) == 1) { return "blue"; }
+        if (Math.mod(i, 8) == 2) { return "violet"; }
+        if (Math.mod(i, 8) == 3) { return "pink"; }
+        if (Math.mod(i, 8) == 4) { return "green"; }
+        if (Math.mod(i, 8) == 5) { return "red"; }
+        if (Math.mod(i, 8) == 6) { return "cyan"; }
+        return "sand";
+    }
+    // Number colour on top of a band-coloured dot.
+    out property <color> on-band: dark ? #0E0E0D : #FFFFFF;
+}

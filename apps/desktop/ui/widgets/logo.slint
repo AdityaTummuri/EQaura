@@ -1,0 +1,65 @@
+import { Theme } from "../theme.slint";
+
+// The EQaura mark: an equalizer bell curve with two fainter echoes above it, the aura.
+// The tile keeps the same dark warm colours in both themes, like an app icon.
+export component LogoMark inherits Rectangle {
+    in property <length> size: 32px;
+    width: root.size;
+    height: root.size;
+    border-radius: root.size * 0.26;
+    background: @linear-gradient(160deg, #26241F 0%, #131312 100%);
+    border-width: 1px;
+    border-color: #FFFFFF18;
+    clip: true;
+
+    // viewbox is 40 x 40; stroke widths scale with the size
+    Path {
+        width: root.size;
+        height: root.size;
+        viewbox-width: 40;
+        viewbox-height: 40;
+        commands: "M2 8.5 C 10 8.5, 13 3.5, 20 3.5 C 27 3.5, 30 8.5, 38 8.5";
+        stroke: #F2994A44;
+        stroke-width: root.size * 0.04;
+        stroke-line-cap: round;
+    }
+    Path {
+        width: root.size;
+        height: root.size;
+        viewbox-width: 40;
+        viewbox-height: 40;
+        commands: "M3 18 C 11 18, 14 9, 20 9 C 26 9, 29 18, 37 18";
+        stroke: #F2994A88;
+        stroke-width: root.size * 0.05;
+        stroke-line-cap: round;
+    }
+    Path {
+        width: root.size;
+        height: root.size;
+        viewbox-width: 40;
+        viewbox-height: 40;
+        commands: "M4 29 C 11 29, 14 15, 20 15 C 26 15, 29 29, 36 29";
+        stroke: #F2994A;
+        stroke-width: root.size * 0.075;
+        stroke-line-cap: round;
+    }
+}
+
+export component Wordmark inherits HorizontalLayout {
+    in property <length> size: 17px;
+    spacing: 0px;
+    Text {
+        text: "EQ";
+        font-size: root.size;
+        font-weight: 800;
+        color: Theme.text;
+        vertical-alignment: center;
+    }
+    Text {
+        text: "aura";
+        font-size: root.size;
+        font-weight: 400;
+        color: Theme.text;
+        vertical-alignment: center;
+    }
+}

@@ -1,0 +1,23 @@
+import { Theme } from "../theme.slint";
+import { Icons } from "../icons/icons.slint";
+
+// A 20 px grid line icon. The stroke scales with the size (1.6 px at 20 px).
+export component Icon inherits Path {
+    in property <string> name;
+    in property <length> size: 20px;
+    in property <color> tint: Theme.text-2;
+    horizontal-stretch: 0;
+    vertical-stretch: 0;
+    width: root.size;
+    height: root.size;
+    viewbox-x: 0;
+    viewbox-y: 0;
+    viewbox-width: 20;
+    viewbox-height: 20;
+    commands: Icons.path(root.name);
+    stroke: root.tint;
+    stroke-width: root.size * 0.08;
+    stroke-line-cap: round;
+    stroke-line-join: round;
+    fill: transparent;
+}

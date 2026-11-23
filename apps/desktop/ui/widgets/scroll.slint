@@ -1,0 +1,66 @@
+import { Theme } from "../theme.slint";
+
+// Slim scroll bar for a Flickable. Bind content-y two-way to the flickable.
+export component VScroll inherits Rectangle {
+    in property <length> content-height;
+    in property <length> visible-height;
+    in-out property <length> content-y;
+
+    private property <length> track: root.height - 8px;
+    private property <length> thumb-h: Math.max(28px, root.track * root.visible-height / Math.max(root.content-height, 1px));
+    private property <length> range: Math.max(1px, root.content-height - root.visible-height);
+    private property <length> thumb-y: 4px + (-root.content-y / root.range) * (root.track - root.thumb-h);
+
+    width: 10px;
+    visible: root.content-height > root.visible-height + 1px;
+
+    Rectangle {
+        x: parent.width - 6px;
+        y: root.thumb-y;
+        width: ta.has-hover || ta.pressed ? 6px : 4px;
+        height: root.thumb-h;
+        border-radius: 3px;
+        background: ta.pressed ? Theme.text-3 : ta.has-hover ? Theme.line-strong : Theme.line-strong.with-alpha(0.7);
+        animate width { duration: Theme.dur-fast; }
+    }
+    ta := TouchArea {
+        property <length> grab;
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) {
+                if (self.mouse-y >= root.thumb-y && self.mouse-y <= root.thumb-y + root.thumb-h) {
+                    self.grab = self.mouse-y - root.thumb-y;
+                } else {
+                    self.grab = root.thumb-h / 2;
+                    root.content-y = -Math.min(root.range, Math.max(0px, (self.mouse-y - self.grab - 4px) / Math.max(1px, root.track - root.thumb-h) * root.range));
+                }
+            }
+        }
+        moved => {
+            root.content-y = -Math.min(root.range, Math.max(0px, (self.mouse-y - self.grab - 4px) / Math.max(1px, root.track - root.thumb-h) * root.range));
+        }
+    }
+}
+
+// A vertically scrolling container: put a single layout (or plain children) inside.
+export component ScrollArea inherits Rectangle {
+    in-out property <length> content-y <=> fl.content-y;
+    out property <length> content-height <=> fl.content-height;
+    clip: true;
+    fl := Flickable {
+        width: parent.width;
+        height: parent.height;
+        interactive: false;
+        VerticalLayout {
+            padding-right: 0px;
+            alignment: start;
+            @children
+        }
+    }
+    VScroll {
+        x: parent.width - self.width;
+        height: parent.height;
+        content-height: fl.content-height;
+        visible-height: fl.height;
+        content-y <=> fl.content-y;
+    }
+}

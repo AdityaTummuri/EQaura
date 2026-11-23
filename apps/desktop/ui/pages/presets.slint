@@ -1,0 +1,93 @@
+import { Model, PresetRow, Tone } from "../model.slint";
+import { Theme } from "../theme.slint";
+import { Card, Badge, Divider } from "../widgets/card.slint";
+import { Btn, IconBtn } from "../widgets/button.slint";
+import { Icon } from "../widgets/icon.slint";
+import { ScrollArea } from "../widgets/scroll.slint";
+import { PageFrame, PageHeader, EmptyState } from "../widgets/page.slint";
+
+component PresetItem inherits Rectangle {
+    in property <PresetRow> entry;
+    in property <int> index;
+    height: 64px;
+    background: root.entry.active ? Theme.accent-soft : ta.pressed ? Theme.surface-3 : ta.has-hover ? Theme.surface-2 : transparent;
+    animate background { duration: Theme.dur-fast; }
+    accessible-role: AccessibleRole.list-item;
+    accessible-label: root.entry.name + ", " + root.entry.detail + (root.entry.active ? ", loaded" : "") + (root.entry.builtin ? ", built in" : "");
+    accessible-action-default => { Model.preset-load(root.index); }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { Model.preset-load(root.index); } }
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 10px;
+        spacing: 14px;
+        Rectangle {
+            width: 20px;
+            horizontal-stretch: 0;
+            Icon { name: "presets"; size: 20px; tint: root.entry.active ? Theme.accent : Theme.text-3; y: (parent.height - self.height) / 2; }
+        }
+        VerticalLayout {
+            horizontal-stretch: 1;
+            alignment: center;
+            spacing: 2px;
+            Text { text: root.entry.name; color: Theme.text; font-size: Theme.fs-body + 1px; font-weight: 600; overflow: elide; }
+            Text { text: root.entry.detail; color: Theme.text-2; font-size: Theme.fs-small; overflow: elide; }
+        }
+        Rectangle {
+            horizontal-stretch: 0;
+            preferred-width: tags.preferred-width;
+            tags := HorizontalLayout {
+                spacing: 6px;
+                alignment: end;
+                if root.entry.active: Badge { y: (parent.height - self.height) / 2; text: "Loaded"; tone: Tone.good; icon: "check"; }
+                if root.entry.builtin: Badge { y: (parent.height - self.height) / 2; text: "Built in"; }
+            }
+        }
+        HorizontalLayout {
+            horizontal-stretch: 0;
+            spacing: 2px;
+            IconBtn { y: (parent.height - self.height) / 2; icon: "edit"; label: "Rename " + root.entry.name; enabled: !root.entry.builtin; clicked => { Model.preset-rename(root.index); } }
+            IconBtn { y: (parent.height - self.height) / 2; icon: "trash"; label: "Delete " + root.entry.name; enabled: !root.entry.builtin; clicked => { Model.preset-delete(root.index); } }
+        }
+    }
+}
+
+export component PresetsPage inherits Rectangle {
+    PageFrame {
+        VerticalLayout {
+            padding-top: 24px;
+            padding-bottom: 20px;
+            spacing: 16px;
+            PageHeader {
+                title: "Presets";
+                subtitle: "Save a sound you like, switch between sounds, and share them as files.";
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                Btn { text: "Save"; icon: "save"; kind: "primary"; clicked => { Model.preset-save(); } }
+                Btn { text: "Save as"; icon: "copy"; clicked => { Model.preset-save-as(); } }
+                Rectangle { horizontal-stretch: 1; }
+                Btn { text: "Import"; icon: "import"; clicked => { Model.preset-import(); } }
+                Btn { text: "Export"; icon: "export"; clicked => { Model.preset-export(); } }
+            }
+            Card {
+                vertical-stretch: 1;
+                min-height: 140px;
+                clip: true;
+                if Model.presets.length == 0: EmptyState {
+                    title: "No presets yet";
+                    body: "Press Save to keep the current sound, or Import to load a preset file.";
+                    Icon { name: "presets"; size: 24px; tint: Theme.text-2; x: 12px; y: 12px; }
+                }
+                if Model.presets.length > 0: ScrollArea {
+                    VerticalLayout {
+                        padding-right: 12px;
+                        for entry[i] in Model.presets: VerticalLayout {
+                            PresetItem { entry: entry; index: i; }
+                            if i < Model.presets.length - 1: Divider { }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
