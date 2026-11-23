@@ -1329,10 +1329,8 @@ fn main() {
 
     let mut count = 0;
     for scene in scenes() {
-        if let Some(f) = &f_scene {
-            if !scene.name.contains(f.as_str()) {
-                continue;
-            }
+        if f_scene.as_ref().is_some_and(|f| !scene.name.contains(f.as_str())) {
+            continue;
         }
         for &(tname, tmode) in &themes {
             for &(lw, lh) in &sizes {

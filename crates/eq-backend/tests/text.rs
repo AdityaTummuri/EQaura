@@ -97,7 +97,7 @@ fn pipewire_preamp_and_extremes() {
     let p = Profile { filters: vec![Filter::peak(1000.0, 6.0, 1.0); 40], ..Profile::default() };
     let chain = p.chain(48_000.0);
     let n = pw::slots_for(&chain);
-    assert!(n >= 41 && n % 8 == 0);
+    assert!(n >= 41 && n.is_multiple_of(8));
     let s = pw::slots(&chain, 48_000.0, n);
     assert!((20.0 * s[0].0.b0.log10() - chain.preamp_db).abs() < 1e-9);
     let text = pw::config(&s, 48_000, &pw::Routing { smart: false, target: None });

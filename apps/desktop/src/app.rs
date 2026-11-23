@@ -95,6 +95,8 @@ struct Core {
     models: Vec<String>,
     test: Option<Test>,
     thresholds: Option<Vec<Threshold>>,
+    /// Chosen before the compensation is switched on.
+    hearing_strength: f64,
     player: tone::Player,
     name_for: NameFor,
     lists: Lists,
@@ -236,6 +238,7 @@ pub fn start_with(ui: &AppWindow, store: Store, engine: Box<dyn Engine>) {
         models: Vec::new(),
         test: None,
         thresholds: None,
+        hearing_strength: 0.5,
         player: tone::Player::default(),
         name_for: NameFor::SaveAs,
         lists,
@@ -450,7 +453,7 @@ impl Core {
             m.set_headphone_strength(p.headphone.as_ref().map_or(1.0, |h| h.strength) as f32);
             m.set_hearing_on(p.hearing.as_ref().is_some_and(|h| h.on));
             m.set_hearing_has_result(p.hearing.is_some() || self.thresholds.is_some());
-            m.set_hearing_strength(p.hearing.as_ref().map_or(0.5, |h| h.strength) as f32);
+            m.set_hearing_strength(p.hearing.as_ref().map_or(self.hearing_strength, |h| h.strength) as f32);
         });
         if !self.dragging {
             self.refresh_presets();
@@ -1045,7 +1048,7 @@ impl Core {
         let right: Vec<(f64, f64)> = comp.iter().map(|c| (c.0, c.2)).collect();
         let layer = HearingLayer {
             on: true,
-            strength: self.profile.hearing.as_ref().map_or(0.5, |h| h.strength),
+            strength: self.profile.hearing.as_ref().map_or(self.hearing_strength, |h| h.strength),
             left: hearing::fit(&left, RATE),
             right: hearing::fit(&right, RATE),
         };
@@ -1709,6 +1712,8 @@ fn connect(ui: &AppWindow) {
     m.on_hearing_set_strength(|v| {
         with(move |c| {
             let v = f64::from(v.clamp(0.0, 1.0));
+            c.hearing_strength = v;
+            c.set(|m| m.set_hearing_strength(v as f32));
             c.edit(Some("hearing strength"), |p| {
                 if let Some(h) = &mut p.hearing {
                     h.strength = v;
