@@ -315,7 +315,7 @@ mod tests {
     fn handles_unusual_layouts() {
         let (mut rt, _ends) = rt(&Profile::default(), true);
         // Two mono outputs, then eight channels, then mono, then short output.
-        let mut input = [(2, vec![0.5f32, -0.25].repeat(256))];
+        let mut input = [(2, [0.5f32, -0.25].repeat(256))];
         let mut out = [(1, vec![9f32; 256]), (1, vec![9f32; 256])];
         run(&mut rt, &mut input, &mut out);
         assert!(out[0].1.iter().all(|s| *s == 0.5) && out[1].1.iter().all(|s| *s == -0.25));

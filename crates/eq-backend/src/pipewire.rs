@@ -243,8 +243,7 @@ pub fn read_dump(json: &str) -> Graph {
 pub fn read_version(text: &str) -> Option<(u32, u32, u32)> {
     text.split(|c: char| !(c.is_ascii_digit() || c == '.')).find_map(|word| {
         let mut p = word.split('.').map(|n| n.parse::<u32>().ok());
-        match (p.next()??, p.next()??, p.next()) {
-            (a, b, c) => Some((a, b, c.flatten().unwrap_or(0))),
-        }
+        let (a, b) = (p.next()??, p.next()??);
+        Some((a, b, p.next().flatten().unwrap_or(0)))
     })
 }

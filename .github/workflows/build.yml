@@ -52,7 +52,10 @@ jobs:
 
       - name: Lints
         if: ${{ !cancelled() }}
-        run: cargo clippy --workspace --all-targets --locked --keep-going -- -D warnings
+        shell: bash
+        run: |
+          cargo clippy --workspace --all-targets --locked --keep-going 2>&1 | tee clippy.log
+          ! grep -qE '^(warning|error)' clippy.log
 
   pipewire:
     # Loads the generated settings into a real PipeWire. No sound hardware is

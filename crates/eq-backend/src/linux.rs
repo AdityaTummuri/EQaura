@@ -197,7 +197,7 @@ impl Linux {
         if let Some(r) = &self.running
             && r.rate == rate
             && r.routing == routing
-            && r.slots.len() >= chain.left.len().max(chain.right.len()) + 1
+            && r.slots.len() > chain.left.len().max(chain.right.len())
             && let Some(id) = g.id_of(pw::SINK)
         {
             let new = pw::slots(&chain, f64::from(rate), r.slots.len());
