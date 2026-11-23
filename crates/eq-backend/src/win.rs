@@ -205,11 +205,19 @@ impl Backend for Windows {
         out.push(Check::new(Level::Good, "Equalizer APO is installed", &apo.install.to_string_lossy()));
         let main = apo::inspect(&std::fs::read(apo.config.join("config.txt")).unwrap_or_default());
         if main.has_include {
-            out.push(Check::new(Level::Good, "EQaura is connected", "Equalizer APO loads EQaura's settings."));
+            out.push(Check::new(
+                Level::Good,
+                "EQaura is connected",
+                "Equalizer APO loads EQaura's settings.",
+            ));
         } else {
             out.push(
-                Check::new(Level::Bad, "EQaura is not connected", "Equalizer APO does not load EQaura's settings yet.")
-                    .with("Connect", Action::AddInclude),
+                Check::new(
+                    Level::Bad,
+                    "EQaura is not connected",
+                    "Equalizer APO does not load EQaura's settings yet.",
+                )
+                .with("Connect", Action::AddInclude),
             );
         }
         if !main.others.is_empty() {

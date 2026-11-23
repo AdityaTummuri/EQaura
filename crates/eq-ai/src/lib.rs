@@ -32,7 +32,10 @@ impl std::fmt::Display for AiError {
             AiError::BadKey => write!(f, "The provider did not accept this API key."),
             AiError::NotFound(s) => write!(f, "The provider could not find this model or address. {s}"),
             AiError::RateLimited => {
-                write!(f, "The provider is limiting requests, or the account is out of credit. Try again later.")
+                write!(
+                    f,
+                    "The provider is limiting requests, or the account is out of credit. Try again later."
+                )
             }
             AiError::Timeout => write!(f, "The provider took too long to answer."),
             AiError::Offline => write!(f, "Could not reach the provider. Check the connection and address."),

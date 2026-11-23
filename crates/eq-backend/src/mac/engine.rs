@@ -7,8 +7,8 @@ use crate::{State, swap_file};
 use eq_core::dsp::Stereo;
 use eq_core::profile::Chain;
 use objc2_core_audio::{
-    AudioDeviceCreateIOProcID, AudioDeviceDestroyIOProcID, AudioDeviceIOProcID, AudioDeviceStart, AudioDeviceStop,
-    AudioObjectID,
+    AudioDeviceCreateIOProcID, AudioDeviceDestroyIOProcID, AudioDeviceIOProcID, AudioDeviceStart,
+    AudioDeviceStop, AudioObjectID,
 };
 use objc2_core_audio_types::{AudioBufferList, AudioTimeStamp};
 use rtrb::{Consumer, Producer, RingBuffer};

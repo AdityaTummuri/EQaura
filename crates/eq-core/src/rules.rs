@@ -25,64 +25,255 @@ struct Quality {
 }
 
 const QUALITIES: &[Quality] = &[
-    Quality { words: &["sub bass", "sub-bass", "subbass", "rumble", "deep bass"], label: "sub-bass",
-        more: &[(LS, 45.0, 4.0, 0.8)], less: &[(LS, 45.0, -4.0, 0.8)], complaint: false },
-    Quality { words: &["boomy", "booming", "bloated"], label: "boominess",
-        more: &[(PK, 120.0, 3.0, 1.0)], less: &[(PK, 120.0, -3.5, 1.0)], complaint: true },
-    Quality { words: &["muddy", "mud", "muffled", "murky", "unclear"], label: "muddiness",
-        more: &[(PK, 280.0, 3.0, 1.0)], less: &[(PK, 280.0, -3.0, 1.0), (PK, 3000.0, 1.5, 0.9)], complaint: true },
-    Quality { words: &["boxy", "box"], label: "boxiness",
-        more: &[(PK, 450.0, 2.5, 1.2)], less: &[(PK, 450.0, -3.0, 1.2)], complaint: true },
-    Quality { words: &["nasal", "honky", "honk"], label: "nasal sound",
-        more: &[(PK, 1000.0, 2.5, 1.4)], less: &[(PK, 1000.0, -3.0, 1.4)], complaint: true },
-    Quality { words: &["sibilant", "sibilance", "hissy", "lispy", "ess sounds", "s sounds"], label: "sibilance",
-        more: &[(PK, 7000.0, 2.0, 2.5)], less: &[(PK, 7000.0, -4.0, 2.5)], complaint: true },
-    Quality { words: &["harsh", "harshness", "piercing", "shouty", "fatiguing", "tiring", "sharp", "shrill", "screechy", "strident"], label: "harshness",
-        more: &[(PK, 3500.0, 2.5, 1.2)], less: &[(PK, 3500.0, -3.0, 1.2), (PK, 8000.0, -1.5, 1.5)], complaint: true },
-    Quality { words: &["tinny", "metallic"], label: "tinny sound",
-        more: &[(PK, 5000.0, 2.0, 1.0)], less: &[(PK, 5000.0, -2.5, 1.0), (LS, 120.0, 2.5, 0.7)], complaint: true },
-    Quality { words: &["thin", "hollow", "weak", "no body", "lifeless"], label: "thinness",
-        more: &[(LS, 150.0, -2.0, 0.7)], less: &[(LS, 110.0, 3.0, 0.7), (PK, 250.0, 1.5, 0.9)], complaint: true },
-    Quality { words: &["dull", "dark", "veiled", "flat sounding", "lacks detail"], label: "dullness",
-        more: &[(HS, 6000.0, -2.5, 0.7)], less: &[(HS, 6000.0, 3.0, 0.7), (PK, 3000.0, 1.0, 0.9)], complaint: true },
-    Quality { words: &["vocals far", "voice far", "vocal far", "distant", "far away", "recessed", "buried"], label: "distance",
-        more: &[(PK, 2000.0, -2.5, 0.9)], less: &[(PK, 2000.0, 3.0, 0.9), (PK, 300.0, -1.5, 1.0)], complaint: true },
-    Quality { words: &["punch", "punchy", "kick", "impact", "slam", "thump"], label: "punch",
-        more: &[(PK, 90.0, 3.5, 1.2)], less: &[(PK, 90.0, -3.5, 1.2)], complaint: false },
-    Quality { words: &["bass", "low end", "lows", "bassy", "low frequencies"], label: "bass",
-        more: &[(LS, 105.0, 4.0, 0.7)], less: &[(LS, 105.0, -4.0, 0.7)], complaint: false },
-    Quality { words: &["warm", "warmer", "warmth", "body", "fuller", "full", "richer", "rich", "cozy"], label: "warmth",
-        more: &[(PK, 200.0, 2.5, 0.8), (HS, 8000.0, -1.0, 0.7)], less: &[(PK, 200.0, -2.5, 0.8)], complaint: false },
-    Quality { words: &["vocal", "vocals", "voice", "voices", "singer", "singing"], label: "vocals",
-        more: &[(PK, 2200.0, 3.0, 0.9)], less: &[(PK, 2200.0, -3.0, 0.9)], complaint: false },
-    Quality { words: &["dialogue", "dialog", "speech", "podcast", "podcasts", "audiobook", "call", "calls", "talking"], label: "speech clarity",
-        more: &[(PK, 2500.0, 3.5, 0.9), (PK, 200.0, -2.5, 0.8)], less: &[(PK, 2500.0, -3.0, 0.9)], complaint: false },
-    Quality { words: &["mids", "midrange", "mid", "middle"], label: "mids",
-        more: &[(PK, 1000.0, 3.0, 0.7)], less: &[(PK, 1000.0, -3.0, 0.7)], complaint: false },
-    Quality { words: &["footstep", "footsteps", "gaming", "fps", "game"], label: "game detail",
-        more: &[(PK, 3000.0, 4.0, 0.9), (LS, 100.0, -3.0, 0.7)], less: &[(PK, 3000.0, -3.0, 0.9)], complaint: false },
-    Quality { words: &["guitar", "guitars"], label: "guitars",
-        more: &[(PK, 2800.0, 2.5, 1.0)], less: &[(PK, 2800.0, -2.5, 1.0)], complaint: false },
-    Quality { words: &["piano", "keys"], label: "piano",
-        more: &[(PK, 1500.0, 2.0, 0.8)], less: &[(PK, 1500.0, -2.0, 0.8)], complaint: false },
-    Quality { words: &["drum", "drums", "snare"], label: "drums",
-        more: &[(PK, 90.0, 2.5, 1.2), (PK, 4500.0, 2.0, 1.2)], less: &[(PK, 90.0, -2.5, 1.2), (PK, 4500.0, -2.0, 1.2)], complaint: false },
-    Quality { words: &["cymbal", "cymbals", "hi hat", "hi-hat", "hats"], label: "cymbals",
-        more: &[(PK, 9000.0, 2.5, 1.2)], less: &[(PK, 9000.0, -3.0, 1.2)], complaint: false },
-    Quality { words: &["clarity", "clear", "clearer", "detail", "detailed", "definition", "crisp", "crisper"], label: "clarity",
-        more: &[(PK, 3200.0, 2.5, 0.9), (PK, 280.0, -1.5, 1.0)], less: &[(PK, 3200.0, -2.5, 0.9)], complaint: false },
-    Quality { words: &["presence", "forward", "closer", "upfront"], label: "presence",
-        more: &[(PK, 4000.0, 2.5, 1.0)], less: &[(PK, 4000.0, -2.5, 1.0)], complaint: false },
-    Quality { words: &["air", "airy", "sparkle", "sparkly", "open", "space", "spacious"], label: "air",
-        more: &[(HS, 11000.0, 3.5, 0.7)], less: &[(HS, 11000.0, -3.5, 0.7)], complaint: false },
-    Quality { words: &["treble", "high end", "highs", "bright", "brighter", "brightness"], label: "treble",
-        more: &[(HS, 7000.0, 3.0, 0.7)], less: &[(HS, 7000.0, -3.0, 0.7)], complaint: false },
-    Quality { words: &["smooth", "smoother", "relaxed", "softer", "gentle", "mellow"], label: "smoothness",
-        more: &[(PK, 3500.0, -2.0, 1.0), (HS, 8000.0, -2.0, 0.7)], less: &[(PK, 3500.0, 2.0, 1.0)], complaint: false },
+    Quality {
+        words: &["sub bass", "sub-bass", "subbass", "rumble", "deep bass"],
+        label: "sub-bass",
+        more: &[(LS, 45.0, 4.0, 0.8)],
+        less: &[(LS, 45.0, -4.0, 0.8)],
+        complaint: false,
+    },
+    Quality {
+        words: &["boomy", "booming", "bloated"],
+        label: "boominess",
+        more: &[(PK, 120.0, 3.0, 1.0)],
+        less: &[(PK, 120.0, -3.5, 1.0)],
+        complaint: true,
+    },
+    Quality {
+        words: &["muddy", "mud", "muffled", "murky", "unclear"],
+        label: "muddiness",
+        more: &[(PK, 280.0, 3.0, 1.0)],
+        less: &[(PK, 280.0, -3.0, 1.0), (PK, 3000.0, 1.5, 0.9)],
+        complaint: true,
+    },
+    Quality {
+        words: &["boxy", "box"],
+        label: "boxiness",
+        more: &[(PK, 450.0, 2.5, 1.2)],
+        less: &[(PK, 450.0, -3.0, 1.2)],
+        complaint: true,
+    },
+    Quality {
+        words: &["nasal", "honky", "honk"],
+        label: "nasal sound",
+        more: &[(PK, 1000.0, 2.5, 1.4)],
+        less: &[(PK, 1000.0, -3.0, 1.4)],
+        complaint: true,
+    },
+    Quality {
+        words: &["sibilant", "sibilance", "hissy", "lispy", "ess sounds", "s sounds"],
+        label: "sibilance",
+        more: &[(PK, 7000.0, 2.0, 2.5)],
+        less: &[(PK, 7000.0, -4.0, 2.5)],
+        complaint: true,
+    },
+    Quality {
+        words: &[
+            "harsh",
+            "harshness",
+            "piercing",
+            "shouty",
+            "fatiguing",
+            "tiring",
+            "sharp",
+            "shrill",
+            "screechy",
+            "strident",
+        ],
+        label: "harshness",
+        more: &[(PK, 3500.0, 2.5, 1.2)],
+        less: &[(PK, 3500.0, -3.0, 1.2), (PK, 8000.0, -1.5, 1.5)],
+        complaint: true,
+    },
+    Quality {
+        words: &["tinny", "metallic"],
+        label: "tinny sound",
+        more: &[(PK, 5000.0, 2.0, 1.0)],
+        less: &[(PK, 5000.0, -2.5, 1.0), (LS, 120.0, 2.5, 0.7)],
+        complaint: true,
+    },
+    Quality {
+        words: &["thin", "hollow", "weak", "no body", "lifeless"],
+        label: "thinness",
+        more: &[(LS, 150.0, -2.0, 0.7)],
+        less: &[(LS, 110.0, 3.0, 0.7), (PK, 250.0, 1.5, 0.9)],
+        complaint: true,
+    },
+    Quality {
+        words: &["dull", "dark", "veiled", "flat sounding", "lacks detail"],
+        label: "dullness",
+        more: &[(HS, 6000.0, -2.5, 0.7)],
+        less: &[(HS, 6000.0, 3.0, 0.7), (PK, 3000.0, 1.0, 0.9)],
+        complaint: true,
+    },
+    Quality {
+        words: &["vocals far", "voice far", "vocal far", "distant", "far away", "recessed", "buried"],
+        label: "distance",
+        more: &[(PK, 2000.0, -2.5, 0.9)],
+        less: &[(PK, 2000.0, 3.0, 0.9), (PK, 300.0, -1.5, 1.0)],
+        complaint: true,
+    },
+    Quality {
+        words: &["punch", "punchy", "kick", "impact", "slam", "thump"],
+        label: "punch",
+        more: &[(PK, 90.0, 3.5, 1.2)],
+        less: &[(PK, 90.0, -3.5, 1.2)],
+        complaint: false,
+    },
+    Quality {
+        words: &["bass", "low end", "lows", "bassy", "low frequencies"],
+        label: "bass",
+        more: &[(LS, 105.0, 4.0, 0.7)],
+        less: &[(LS, 105.0, -4.0, 0.7)],
+        complaint: false,
+    },
+    Quality {
+        words: &["warm", "warmer", "warmth", "body", "fuller", "full", "richer", "rich", "cozy"],
+        label: "warmth",
+        more: &[(PK, 200.0, 2.5, 0.8), (HS, 8000.0, -1.0, 0.7)],
+        less: &[(PK, 200.0, -2.5, 0.8)],
+        complaint: false,
+    },
+    Quality {
+        words: &["vocal", "vocals", "voice", "voices", "singer", "singing"],
+        label: "vocals",
+        more: &[(PK, 2200.0, 3.0, 0.9)],
+        less: &[(PK, 2200.0, -3.0, 0.9)],
+        complaint: false,
+    },
+    Quality {
+        words: &[
+            "dialogue",
+            "dialog",
+            "speech",
+            "podcast",
+            "podcasts",
+            "audiobook",
+            "call",
+            "calls",
+            "talking",
+        ],
+        label: "speech clarity",
+        more: &[(PK, 2500.0, 3.5, 0.9), (PK, 200.0, -2.5, 0.8)],
+        less: &[(PK, 2500.0, -3.0, 0.9)],
+        complaint: false,
+    },
+    Quality {
+        words: &["mids", "midrange", "mid", "middle"],
+        label: "mids",
+        more: &[(PK, 1000.0, 3.0, 0.7)],
+        less: &[(PK, 1000.0, -3.0, 0.7)],
+        complaint: false,
+    },
+    Quality {
+        words: &["footstep", "footsteps", "gaming", "fps", "game"],
+        label: "game detail",
+        more: &[(PK, 3000.0, 4.0, 0.9), (LS, 100.0, -3.0, 0.7)],
+        less: &[(PK, 3000.0, -3.0, 0.9)],
+        complaint: false,
+    },
+    Quality {
+        words: &["guitar", "guitars"],
+        label: "guitars",
+        more: &[(PK, 2800.0, 2.5, 1.0)],
+        less: &[(PK, 2800.0, -2.5, 1.0)],
+        complaint: false,
+    },
+    Quality {
+        words: &["piano", "keys"],
+        label: "piano",
+        more: &[(PK, 1500.0, 2.0, 0.8)],
+        less: &[(PK, 1500.0, -2.0, 0.8)],
+        complaint: false,
+    },
+    Quality {
+        words: &["drum", "drums", "snare"],
+        label: "drums",
+        more: &[(PK, 90.0, 2.5, 1.2), (PK, 4500.0, 2.0, 1.2)],
+        less: &[(PK, 90.0, -2.5, 1.2), (PK, 4500.0, -2.0, 1.2)],
+        complaint: false,
+    },
+    Quality {
+        words: &["cymbal", "cymbals", "hi hat", "hi-hat", "hats"],
+        label: "cymbals",
+        more: &[(PK, 9000.0, 2.5, 1.2)],
+        less: &[(PK, 9000.0, -3.0, 1.2)],
+        complaint: false,
+    },
+    Quality {
+        words: &["clarity", "clear", "clearer", "detail", "detailed", "definition", "crisp", "crisper"],
+        label: "clarity",
+        more: &[(PK, 3200.0, 2.5, 0.9), (PK, 280.0, -1.5, 1.0)],
+        less: &[(PK, 3200.0, -2.5, 0.9)],
+        complaint: false,
+    },
+    Quality {
+        words: &["presence", "forward", "closer", "upfront"],
+        label: "presence",
+        more: &[(PK, 4000.0, 2.5, 1.0)],
+        less: &[(PK, 4000.0, -2.5, 1.0)],
+        complaint: false,
+    },
+    Quality {
+        words: &["air", "airy", "sparkle", "sparkly", "open", "space", "spacious"],
+        label: "air",
+        more: &[(HS, 11000.0, 3.5, 0.7)],
+        less: &[(HS, 11000.0, -3.5, 0.7)],
+        complaint: false,
+    },
+    Quality {
+        words: &["treble", "high end", "highs", "bright", "brighter", "brightness"],
+        label: "treble",
+        more: &[(HS, 7000.0, 3.0, 0.7)],
+        less: &[(HS, 7000.0, -3.0, 0.7)],
+        complaint: false,
+    },
+    Quality {
+        words: &["smooth", "smoother", "relaxed", "softer", "gentle", "mellow"],
+        label: "smoothness",
+        more: &[(PK, 3500.0, -2.0, 1.0), (HS, 8000.0, -2.0, 0.7)],
+        less: &[(PK, 3500.0, 2.0, 1.0)],
+        complaint: false,
+    },
 ];
 
-const LESS: &[&str] = &["less", "reduce", "lower", "cut", "decrease", "remove", "tame", "fewer", "turn down", "too much", "too", "drop", "without", "get rid", "fix", "quieter", "soften"];
-const MORE: &[&str] = &["more", "boost", "add", "increase", "raise", "louder", "turn up", "bring out", "need", "want", "lacks", "lack", "missing", "not enough", "stronger", "bring up"];
+const LESS: &[&str] = &[
+    "less",
+    "reduce",
+    "lower",
+    "cut",
+    "decrease",
+    "remove",
+    "tame",
+    "fewer",
+    "turn down",
+    "too much",
+    "too",
+    "drop",
+    "without",
+    "get rid",
+    "fix",
+    "quieter",
+    "soften",
+];
+const MORE: &[&str] = &[
+    "more",
+    "boost",
+    "add",
+    "increase",
+    "raise",
+    "louder",
+    "turn up",
+    "bring out",
+    "need",
+    "want",
+    "lacks",
+    "lack",
+    "missing",
+    "not enough",
+    "stronger",
+    "bring up",
+];
 const NEGATED: &[&str] = &["not", "no", "don't", "dont", "isn't", "isnt", "never"];
 const SOFT: &[&str] = &["a bit", "a little", "slightly", "bit", "touch", "little", "tad", "somewhat"];
 const HARD: &[&str] = &["much", "a lot", "lot", "way", "very", "really", "extremely", "far more", "loads"];
@@ -132,8 +323,18 @@ fn any(text: &str, list: &[&str]) -> bool {
 pub fn suggest(request: &str, filters: &[Filter]) -> Option<Suggestion> {
     let text = clean(request);
     let flat = text.replace(" ; ", " ");
-    if any(&flat, &["reset", "start over", "make it flat", "flat", "remove all", "clear everything", "remove everything"])
-        && !has(&flat, "flat sounding")
+    if any(
+        &flat,
+        &[
+            "reset",
+            "start over",
+            "make it flat",
+            "flat",
+            "remove all",
+            "clear everything",
+            "remove everything",
+        ],
+    ) && !has(&flat, "flat sounding")
     {
         return (!filters.is_empty())
             .then(|| Suggestion { reason: "Back to a flat curve.".into(), changes: vec![Change::Clear] });
@@ -179,7 +380,8 @@ pub fn suggest(request: &str, filters: &[Filter]) -> Option<Suggestion> {
         let mut found = false;
         // In "the vocals are harsh", vocals only says where the problem is.
         let has_complaint = QUALITIES.iter().any(|q| q.complaint && any(&clause, q.words));
-        let only_subject = has_complaint && !any(&clause, &["more", "boost", "add", "increase", "raise", "louder"]);
+        let only_subject =
+            has_complaint && !any(&clause, &["more", "boost", "add", "increase", "raise", "louder"]);
         for q in QUALITIES {
             if only_subject && !q.complaint {
                 found |= any(&clause, q.words);
@@ -262,7 +464,8 @@ fn merge(filters: &[Filter], moves: impl Iterator<Item = (Move, f64)>) -> Vec<Ch
             continue;
         }
         let change = nudge(filters, kind, freq, gain, q);
-        let taken = |i: usize| out.iter().any(|c| matches!(c, Change::Update(j, _) | Change::Remove(j) if *j == i));
+        let taken =
+            |i: usize| out.iter().any(|c| matches!(c, Change::Update(j, _) | Change::Remove(j) if *j == i));
         match change {
             // Two moves must not fight over one existing band.
             Change::Update(i, _) | Change::Remove(i) if taken(i) => {

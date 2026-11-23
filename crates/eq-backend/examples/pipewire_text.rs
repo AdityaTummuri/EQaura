@@ -7,7 +7,8 @@ use eq_core::profile::{Preamp, Profile};
 
 fn main() {
     let manual = Preamp { auto: false, db: -12.0 };
-    let first = Profile { filters: vec![Filter::peak(1000.0, 6.0, 1.0)], preamp: manual, ..Profile::default() };
+    let first =
+        Profile { filters: vec![Filter::peak(1000.0, 6.0, 1.0)], preamp: manual, ..Profile::default() };
     let second = Profile {
         filters: vec![
             Filter::new(Kind::HighShelf, 300.0, 9.0, 0.7),
@@ -27,7 +28,8 @@ fn main() {
         }
         Some("live") => live_updates(&from, &to).iter().for_each(|m| println!("{m}")),
         Some("expect") => {
-            let at = |f: &[Filter], c: &eq_core::Chain| eq_core::curve::response_at(f, 1000.0, rate) + c.preamp_db;
+            let at =
+                |f: &[Filter], c: &eq_core::Chain| eq_core::curve::response_at(f, 1000.0, rate) + c.preamp_db;
             println!("{:.3} {:.3}", at(&a.left, &a), at(&a.right, &a));
             println!("{:.3} {:.3}", at(&b.left, &b), at(&b.right, &b));
         }

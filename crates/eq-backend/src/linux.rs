@@ -169,7 +169,11 @@ impl Linux {
 
     fn apply_inner(&mut self, state: &State) -> Result<(), String> {
         if !state.enabled {
-            return if self.running.is_some() || self.enabled || self.service_active() { self.stop() } else { Ok(()) };
+            return if self.running.is_some() || self.enabled || self.service_active() {
+                self.stop()
+            } else {
+                Ok(())
+            };
         }
         if self.version.is_none() {
             return Err("PipeWire was not found on this computer.".into());
@@ -305,11 +309,19 @@ impl Backend for Linux {
         if self.enabled {
             let g = self.graph(Duration::ZERO);
             if g.id_of(pw::SINK).is_some() {
-                out.push(Check::new(Level::Good, "The equalizer is running", "It keeps working when EQaura is closed."));
+                out.push(Check::new(
+                    Level::Good,
+                    "The equalizer is running",
+                    "It keeps working when EQaura is closed.",
+                ));
             } else {
                 out.push(
-                    Check::new(Level::Bad, "The equalizer is not running", "Restart it to hear your settings again.")
-                        .with("Restart", Action::RestartEngine),
+                    Check::new(
+                        Level::Bad,
+                        "The equalizer is not running",
+                        "Restart it to hear your settings again.",
+                    )
+                    .with("Restart", Action::RestartEngine),
                 );
             }
         }

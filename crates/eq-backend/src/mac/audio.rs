@@ -177,10 +177,8 @@ impl Tap {
         let mut id: Id = 0;
         // SAFETY: plain Objective-C calls on an object we own.
         let (status, uuid) = unsafe {
-            let d = CATapDescription::initStereoGlobalTapButExcludeProcesses(
-                CATapDescription::alloc(),
-                &list,
-            );
+            let d =
+                CATapDescription::initStereoGlobalTapButExcludeProcesses(CATapDescription::alloc(), &list);
             d.setName(&NSString::from_str("EQaura"));
             d.setPrivate(true);
             d.setMuteBehavior(if mute {
@@ -241,10 +239,7 @@ impl Aggregate {
             (kAudioAggregateDeviceIsPrivateKey, flag(true)),
             (kAudioAggregateDeviceIsStackedKey, flag(false)),
             (kAudioAggregateDeviceTapAutoStartKey, flag(true)),
-            (
-                kAudioAggregateDeviceSubDeviceListKey,
-                object(NSArray::from_retained_slice(&[sub])),
-            ),
+            (kAudioAggregateDeviceSubDeviceListKey, object(NSArray::from_retained_slice(&[sub]))),
             (kAudioAggregateDeviceTapListKey, object(NSArray::from_retained_slice(&[tap]))),
         ]);
         let mut id: Id = 0;

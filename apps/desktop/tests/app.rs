@@ -65,7 +65,11 @@ fn everything_a_user_can_do() {
     let spy = Spy::default();
     let heard = spy.0.clone();
     let begin = |spy: Spy| {
-        app::start_with(&ui, Store::at(dir.clone()), Box::new(Immediate::new(Box::new(spy.clone()), Box::new(app::event))));
+        app::start_with(
+            &ui,
+            Store::at(dir.clone()),
+            Box::new(Immediate::new(Box::new(spy.clone()), Box::new(app::event))),
+        );
         app::event(Event::Devices(spy.clone().devices()));
         app::event(Event::Status(spy.clone().status()));
         settle();

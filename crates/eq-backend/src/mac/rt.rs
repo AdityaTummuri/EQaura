@@ -245,7 +245,8 @@ mod tests {
     fn sine(n: usize, freq: f64, offset: usize) -> Vec<f32> {
         (0..n)
             .flat_map(|i| {
-                let v = (0.2 * (2.0 * std::f64::consts::PI * freq * (i + offset) as f64 / 48_000.0).sin()) as f32;
+                let v =
+                    (0.2 * (2.0 * std::f64::consts::PI * freq * (i + offset) as f64 / 48_000.0).sin()) as f32;
                 [v, v]
             })
             .collect()

@@ -107,9 +107,8 @@ impl Dir {
         }
         let _ = std::fs::create_dir_all(&self.path);
         if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
-            let secs = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map_or(0, |d| d.as_secs());
+            let secs =
+                std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_secs());
             let _ = writeln!(f, "{secs} {}", line.replace(['\n', '\r'], " "));
         }
     }

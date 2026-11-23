@@ -202,7 +202,8 @@ pub fn filter_line(n: usize, f: &Filter) -> String {
 pub fn write(preamp_db: f64, filters: &[Filter]) -> String {
     let mut s = format!("Preamp: {} dB\n", short(preamp_db, 2));
     let mut n = 0;
-    for (ch, head) in [(Channel::Both, ""), (Channel::Left, "Channel: L\n"), (Channel::Right, "Channel: R\n")] {
+    for (ch, head) in [(Channel::Both, ""), (Channel::Left, "Channel: L\n"), (Channel::Right, "Channel: R\n")]
+    {
         let mut first = true;
         for f in filters.iter().filter(|f| f.channel == ch && f.is_valid()) {
             if first {
@@ -235,5 +236,9 @@ pub fn export(profile: &Profile) -> String {
             filters.push(Filter { channel: Channel::Right, ..*f });
         }
     }
-    format!("# {}\n# Made with EQaura\n{}", profile.name.replace(['\n', '\r'], " "), write(chain.preamp_db, &filters))
+    format!(
+        "# {}\n# Made with EQaura\n{}",
+        profile.name.replace(['\n', '\r'], " "),
+        write(chain.preamp_db, &filters)
+    )
 }

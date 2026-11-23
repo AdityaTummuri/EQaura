@@ -62,7 +62,8 @@ fn pipewire_config_is_complete() {
     let chain = sample().chain(48_000.0);
     let n = pw::slots_for(&chain);
     assert_eq!(n, 24);
-    let text = pw::config(&pw::slots(&chain, 48_000.0, n), 48_000, &pw::Routing { smart: true, target: None });
+    let text =
+        pw::config(&pw::slots(&chain, 48_000.0, n), 48_000, &pw::Routing { smart: true, target: None });
     assert_eq!(text.matches("bq_raw").count(), 48);
     assert_eq!(text.matches("output = \"").count(), 46);
     assert!(text.contains("filter.smart = true") && !text.contains("target.object"));

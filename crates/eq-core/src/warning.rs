@@ -66,12 +66,7 @@ pub fn check(profile: &Profile, rate: f64) -> Vec<Warning> {
         ));
     }
     if let Some(h) = profile.hearing.as_ref().filter(|h| h.on) {
-        let top = h
-            .left
-            .iter()
-            .chain(&h.right)
-            .map(|f| f.gain_db * h.strength)
-            .fold(0.0, f64::max);
+        let top = h.left.iter().chain(&h.right).map(|f| f.gain_db * h.strength).fold(0.0, f64::max);
         if top > 10.0 {
             out.push(w(
                 Severity::Caution,

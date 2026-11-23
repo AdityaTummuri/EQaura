@@ -29,8 +29,7 @@ pub enum AiChoice {
 }
 
 impl AiChoice {
-    pub const ALL: [AiChoice; 4] =
-        [AiChoice::Rules, AiChoice::Anthropic, AiChoice::OpenAi, AiChoice::Ollama];
+    pub const ALL: [AiChoice; 4] = [AiChoice::Rules, AiChoice::Anthropic, AiChoice::OpenAi, AiChoice::Ollama];
 
     pub fn id(self) -> &'static str {
         match self {

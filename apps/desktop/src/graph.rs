@@ -90,7 +90,11 @@ pub fn grid_x() -> Vec<GridLine> {
                 (true, true) => format!("{}k", f / 1000.0),
                 (true, false) => format!("{f}"),
             };
-            out.push(GridLine { pos: x_of(f) as f32, label: label.into(), strong: f == 100.0 || f == 1000.0 || f == 10_000.0 });
+            out.push(GridLine {
+                pos: x_of(f) as f32,
+                label: label.into(),
+                strong: f == 100.0 || f == 1000.0 || f == 10_000.0,
+            });
         }
     }
     out

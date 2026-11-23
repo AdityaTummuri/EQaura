@@ -38,7 +38,11 @@ impl Player {
     }
 }
 
-fn open<T>(device: &cpal::Device, config: cpal::StreamConfig, samples: Vec<f32>) -> Result<cpal::Stream, String>
+fn open<T>(
+    device: &cpal::Device,
+    config: cpal::StreamConfig,
+    samples: Vec<f32>,
+) -> Result<cpal::Stream, String>
 where
     T: cpal::SizedSample + cpal::FromSample<f32>,
 {

@@ -75,9 +75,7 @@ impl Mac {
 
     /// True when the engine process received the message.
     fn send(&self, message: &[u8]) -> bool {
-        UnixDatagram::unbound()
-            .and_then(|s| s.send_to(message, socket_path(&self.dir)))
-            .is_ok()
+        UnixDatagram::unbound().and_then(|s| s.send_to(message, socket_path(&self.dir))).is_ok()
     }
 
     fn report(&self) -> Option<Report> {
@@ -177,7 +175,11 @@ impl Backend for Mac {
         let mut out = Vec::new();
         let v = os_version();
         out.push(if v >= (14, 2) {
-            Check::new(Level::Good, &format!("macOS {}.{}", v.0, v.1), "This version can capture system sound.")
+            Check::new(
+                Level::Good,
+                &format!("macOS {}.{}", v.0, v.1),
+                "This version can capture system sound.",
+            )
         } else {
             Check::new(Level::Bad, &format!("macOS {}.{}", v.0, v.1), "EQaura needs macOS 14.2 or newer.")
         });
@@ -265,11 +267,7 @@ impl Backend for Mac {
             };
         }
         let exe = std::env::current_exe().map_err(|e| e.to_string())?;
-        let exe = exe
-            .to_string_lossy()
-            .replace('&', "&amp;")
-            .replace('<', "&lt;")
-            .replace('>', "&gt;");
+        let exe = exe.to_string_lossy().replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;");
         let plist = format!(
             r#"<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

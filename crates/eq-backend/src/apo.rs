@@ -56,9 +56,8 @@ pub struct Main {
 }
 
 fn is_include(line: &str) -> bool {
-    line.split_once(':').is_some_and(|(k, v)| {
-        k.trim().eq_ignore_ascii_case("include") && v.trim().eq_ignore_ascii_case(FILE)
-    })
+    line.split_once(':')
+        .is_some_and(|(k, v)| k.trim().eq_ignore_ascii_case("include") && v.trim().eq_ignore_ascii_case(FILE))
 }
 
 pub fn inspect(bytes: &[u8]) -> Main {

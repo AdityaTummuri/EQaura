@@ -40,7 +40,13 @@ pub fn slots(chain: &Chain, rate: f64, count: usize) -> Slots {
 fn num(v: f64) -> String {
     let s = format!("{v:.12}");
     let s = s.trim_end_matches('0').trim_end_matches('.');
-    if s.is_empty() || s == "-0" { "0.0".into() } else if s.contains('.') { s.into() } else { format!("{s}.0") }
+    if s.is_empty() || s == "-0" {
+        "0.0".into()
+    } else if s.contains('.') {
+        s.into()
+    } else {
+        format!("{s}.0")
+    }
 }
 
 fn controls(c: &Coeffs, prefix: &str, sep: &str) -> String {
@@ -61,7 +67,12 @@ pub fn live_updates(old: &Slots, new: &Slots) -> Vec<String> {
             let mut s = String::from("{ params = [");
             for i in chunk {
                 let (l, r) = &new[*i];
-                let _ = write!(s, " {} {}", controls(l, &format!("l{i}:"), " "), controls(r, &format!("r{i}:"), " "));
+                let _ = write!(
+                    s,
+                    " {} {}",
+                    controls(l, &format!("l{i}:"), " "),
+                    controls(r, &format!("r{i}:"), " ")
+                );
             }
             s + " ] }"
         })
@@ -95,7 +106,11 @@ pub fn config(slots: &Slots, rate: u32, routing: &Routing) -> String {
             let _ = writeln!(
                 nodes,
                 "          {{ type = builtin name = {side}{i} label = bq_raw config = {{ coefficients = [ {{ rate = {rate} b0 = {} b1 = {} b2 = {} a0 = 1.0 a1 = {} a2 = {} }} ] }} }}",
-                num(c.b0), num(c.b1), num(c.b2), num(c.a1), num(c.a2)
+                num(c.b0),
+                num(c.b1),
+                num(c.b2),
+                num(c.a1),
+                num(c.a2)
             );
             if i > 0 {
                 let _ = writeln!(
@@ -107,11 +122,8 @@ pub fn config(slots: &Slots, rate: u32, routing: &Routing) -> String {
         }
     }
     let last = slots.len().saturating_sub(1);
-    let smart = if routing.smart {
-        "\n        filter.smart = true\n        filter.smart.name = eqaura"
-    } else {
-        ""
-    };
+    let smart =
+        if routing.smart { "\n        filter.smart = true\n        filter.smart.name = eqaura" } else { "" };
     let target = match (&routing.target, routing.smart) {
         (Some(t), false) => format!("\n        target.object = {}", quoted(t)),
         _ => String::new(),

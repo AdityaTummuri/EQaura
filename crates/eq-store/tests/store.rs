@@ -25,7 +25,11 @@ fn settings_round_trip_and_survive_damage() {
 #[test]
 fn presets_save_rename_delete() {
     let s = temp("presets");
-    let p = |n: &str| Profile { name: n.into(), filters: vec![Filter::peak(100.0, 1.0, 1.0)], ..Profile::default() };
+    let p = |n: &str| Profile {
+        name: n.into(),
+        filters: vec![Filter::peak(100.0, 1.0, 1.0)],
+        ..Profile::default()
+    };
     for n in ["Warm", "a/b:c", "a_b_c", "../../escape", "NUL", "音楽"] {
         s.save_preset(&p(n)).unwrap();
     }

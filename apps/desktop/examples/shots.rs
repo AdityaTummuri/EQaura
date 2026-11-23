@@ -11,10 +11,10 @@
 //! The sample data is realistic on purpose: curves come from real RBJ biquad maths.
 slint::include_modules!();
 
+use slint::Model as _;
 use slint::platform::software_renderer::{MinimalSoftwareWindow, RepaintBufferType};
 use slint::platform::{Platform, WindowAdapter, WindowEvent};
 use slint::{ModelRc, SharedString, VecModel};
-use slint::Model as _;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -156,8 +156,12 @@ fn push_eq(app: &AppWindow, eq: &Eq) {
     let corr = |f: f64| if eq.correction { correction_db(f) } else { 0.0 };
     m.set_curve_total(curve_path(&left, w, h, &corr, false).into());
     m.set_curve_total_fill(curve_path(&left, w, h, &corr, true).into());
-    m.set_curve_right(if eq.split_ears { curve_path(&right, w, h, &corr, false) } else { String::new() }.into());
-    m.set_curve_correction(if eq.correction { curve_path(&[], w, h, &correction_db, false) } else { String::new() }.into());
+    m.set_curve_right(
+        if eq.split_ears { curve_path(&right, w, h, &corr, false) } else { String::new() }.into(),
+    );
+    m.set_curve_correction(
+        if eq.correction { curve_path(&[], w, h, &correction_db, false) } else { String::new() }.into(),
+    );
     m.set_curve_selected(
         eq.specs
             .get(eq.selected.max(0) as usize)
@@ -201,7 +205,13 @@ fn grids(m: &Model) {
     let mut db = -12;
     while db <= 12 {
         let label = if db % 6 == 0 {
-            if db == 0 { "0".to_string() } else if db > 0 { format!("+{db}") } else { format!("\u{2212}{}", -db) }
+            if db == 0 {
+                "0".to_string()
+            } else if db > 0 {
+                format!("+{db}")
+            } else {
+                format!("\u{2212}{}", -db)
+            }
         } else {
             String::new()
         };
@@ -265,7 +275,18 @@ fn fill_base(app: &AppWindow, eq: &Rc<RefCell<Eq>>) {
         title: "Strong boost near 2.8 kHz".into(),
         detail: "This can sound harsh on some tracks. Lower the gain if it tires your ears.".into(),
     }]));
-    let sl = [("31", 1.0), ("62", 2.5), ("125", 1.5), ("250", -0.5), ("500", -2.0), ("1k", 1.0), ("2k", 3.0), ("4k", -1.5), ("8k", 2.0), ("16k", 1.0)];
+    let sl = [
+        ("31", 1.0),
+        ("62", 2.5),
+        ("125", 1.5),
+        ("250", -0.5),
+        ("500", -2.0),
+        ("1k", 1.0),
+        ("2k", 3.0),
+        ("4k", -1.5),
+        ("8k", 2.0),
+        ("16k", 1.0),
+    ];
     m.set_sliders(vm(sl.iter().map(|(l, g)| Slider10 { label: (*l).into(), gain: *g as f32 }).collect()));
     grids(&m);
     {
@@ -279,20 +300,60 @@ fn fill_base(app: &AppWindow, eq: &Rc<RefCell<Eq>>) {
 
     // presets
     m.set_presets(vm(vec![
-        PresetRow { name: "Warm and relaxed".into(), detail: "10 bands, saved today at 09:14".into(), active: true, builtin: false },
-        PresetRow { name: "Flat".into(), detail: "No changes to the sound".into(), active: false, builtin: true },
-        PresetRow { name: "Bass boost".into(), detail: "3 bands, built in".into(), active: false, builtin: true },
-        PresetRow { name: "Clearer vocals".into(), detail: "4 bands, built in".into(), active: false, builtin: true },
-        PresetRow { name: "Late night".into(), detail: "5 bands, saved yesterday".into(), active: false, builtin: false },
-        PresetRow { name: "Podcasts and calls".into(), detail: "6 bands, saved 3 days ago".into(), active: false, builtin: false },
-        PresetRow { name: "Studio check with a very long name that has to be shortened somewhere".into(), detail: "12 bands, saved last week".into(), active: false, builtin: false },
+        PresetRow {
+            name: "Warm and relaxed".into(),
+            detail: "10 bands, saved today at 09:14".into(),
+            active: true,
+            builtin: false,
+        },
+        PresetRow {
+            name: "Flat".into(),
+            detail: "No changes to the sound".into(),
+            active: false,
+            builtin: true,
+        },
+        PresetRow {
+            name: "Bass boost".into(),
+            detail: "3 bands, built in".into(),
+            active: false,
+            builtin: true,
+        },
+        PresetRow {
+            name: "Clearer vocals".into(),
+            detail: "4 bands, built in".into(),
+            active: false,
+            builtin: true,
+        },
+        PresetRow {
+            name: "Late night".into(),
+            detail: "5 bands, saved yesterday".into(),
+            active: false,
+            builtin: false,
+        },
+        PresetRow {
+            name: "Podcasts and calls".into(),
+            detail: "6 bands, saved 3 days ago".into(),
+            active: false,
+            builtin: false,
+        },
+        PresetRow {
+            name: "Studio check with a very long name that has to be shortened somewhere".into(),
+            detail: "12 bands, saved last week".into(),
+            active: false,
+            builtin: false,
+        },
     ]));
     m.set_name_dialog(false);
     m.set_name_dialog_title("Save preset".into());
     m.set_name_dialog_text("Warm and relaxed".into());
 
     // headphones
-    let hp = |n: &str, s: &str, f: &str, a: bool| HeadphoneRow { name: n.into(), source: s.into(), form: f.into(), active: a };
+    let hp = |n: &str, s: &str, f: &str, a: bool| HeadphoneRow {
+        name: n.into(),
+        source: s.into(),
+        form: f.into(),
+        active: a,
+    };
     m.set_headphone_query("".into());
     m.set_headphone_results(vm(vec![
         hp("Sennheiser HD 600", "oratory1990, measured on a GRAS 45CA", "Over-ear", true),
@@ -364,15 +425,51 @@ fn fill_base(app: &AppWindow, eq: &Rc<RefCell<Eq>>) {
 
     // system
     m.set_devices(vm(vec![
-        DeviceRow { name: "MacBook Pro Speakers".into(), detail: "48 kHz, 2 channels, built in".into(), profile: "Warm and relaxed".into(), is_default: true },
-        DeviceRow { name: "Sennheiser HD 600 on FiiO K3".into(), detail: "96 kHz, 2 channels, USB".into(), profile: "Flat".into(), is_default: false },
-        DeviceRow { name: "LG UltraFine Display Audio".into(), detail: "48 kHz, 2 channels, HDMI".into(), profile: "No profile".into(), is_default: false },
+        DeviceRow {
+            name: "MacBook Pro Speakers".into(),
+            detail: "48 kHz, 2 channels, built in".into(),
+            profile: "Warm and relaxed".into(),
+            is_default: true,
+        },
+        DeviceRow {
+            name: "Sennheiser HD 600 on FiiO K3".into(),
+            detail: "96 kHz, 2 channels, USB".into(),
+            profile: "Flat".into(),
+            is_default: false,
+        },
+        DeviceRow {
+            name: "LG UltraFine Display Audio".into(),
+            detail: "48 kHz, 2 channels, HDMI".into(),
+            profile: "No profile".into(),
+            is_default: false,
+        },
     ]));
     m.set_health(vm(vec![
-        HealthRow { tone: Tone::Good, title: "Audio driver found".into(), detail: "The virtual output device is installed and visible to apps.".into(), action: "".into() },
-        HealthRow { tone: Tone::Good, title: "Engine is running".into(), detail: "Processing 48 kHz audio with 2.1 ms of added delay.".into(), action: "".into() },
-        HealthRow { tone: Tone::Warning, title: "System output is not set to EQaura".into(), detail: "Apps are playing straight to MacBook Pro Speakers, so the equalizer is not applied.".into(), action: "Use EQaura output".into() },
-        HealthRow { tone: Tone::Danger, title: "Microphone permission is off".into(), detail: "Needed only to capture the system sound on this version of macOS.".into(), action: "Open settings".into() },
+        HealthRow {
+            tone: Tone::Good,
+            title: "Audio driver found".into(),
+            detail: "The virtual output device is installed and visible to apps.".into(),
+            action: "".into(),
+        },
+        HealthRow {
+            tone: Tone::Good,
+            title: "Engine is running".into(),
+            detail: "Processing 48 kHz audio with 2.1 ms of added delay.".into(),
+            action: "".into(),
+        },
+        HealthRow {
+            tone: Tone::Warning,
+            title: "System output is not set to EQaura".into(),
+            detail: "Apps are playing straight to MacBook Pro Speakers, so the equalizer is not applied."
+                .into(),
+            action: "Use EQaura output".into(),
+        },
+        HealthRow {
+            tone: Tone::Danger,
+            title: "Microphone permission is off".into(),
+            detail: "Needed only to capture the system sound on this version of macOS.".into(),
+            action: "Open settings".into(),
+        },
     ]));
     m.set_health_busy(false);
 
@@ -394,11 +491,31 @@ fn fill_base(app: &AppWindow, eq: &Rc<RefCell<Eq>>) {
 
     // about
     m.set_credits(vm(vec![
-        Credit { name: "Slint".into(), license: "GPL-3.0 or royalty-free".into(), detail: "The user interface toolkit".into() },
-        Credit { name: "cpal".into(), license: "Apache-2.0".into(), detail: "Cross-platform audio input and output".into() },
-        Credit { name: "AutoEq measurements".into(), license: "MIT".into(), detail: "Headphone frequency response data and targets".into() },
-        Credit { name: "oratory1990".into(), license: "Measurements, with thanks".into(), detail: "Many of the headphone measurements used here".into() },
-        Credit { name: "serde".into(), license: "MIT or Apache-2.0".into(), detail: "Reading and writing presets".into() },
+        Credit {
+            name: "Slint".into(),
+            license: "GPL-3.0 or royalty-free".into(),
+            detail: "The user interface toolkit".into(),
+        },
+        Credit {
+            name: "cpal".into(),
+            license: "Apache-2.0".into(),
+            detail: "Cross-platform audio input and output".into(),
+        },
+        Credit {
+            name: "AutoEq measurements".into(),
+            license: "MIT".into(),
+            detail: "Headphone frequency response data and targets".into(),
+        },
+        Credit {
+            name: "oratory1990".into(),
+            license: "Measurements, with thanks".into(),
+            detail: "Many of the headphone measurements used here".into(),
+        },
+        Credit {
+            name: "serde".into(),
+            license: "MIT or Apache-2.0".into(),
+            detail: "Reading and writing presets".into(),
+        },
     ]));
 }
 
@@ -411,7 +528,7 @@ struct Scene {
     page: Page,
     main: bool, // also rendered at 2x
     setup: fn(&AppWindow, &Rc<RefCell<Eq>>),
-    tabs: u32,                // Tab key presses before rendering, to show keyboard focus
+    tabs: u32,                 // Tab key presses before rendering, to show keyboard focus
     hover: Option<(f32, f32)>, // pointer position to show hover states
     click: Option<(f32, f32)>, // a click before rendering, to show popups
 }
@@ -420,138 +537,438 @@ fn nothing(_: &AppWindow, _: &Rc<RefCell<Eq>>) {}
 
 fn scenes() -> Vec<Scene> {
     vec![
-        Scene { name: "eq", page: Page::Equalizer, main: true, tabs: 0, hover: None, click: None, setup: nothing },
-        Scene { name: "eq-sliders", page: Page::Equalizer, main: false, tabs: 0, hover: None, click: None, setup: |a, _| a.global::<Model>().set_slider_view(true) },
-        Scene { name: "eq-off", page: Page::Equalizer, main: false, tabs: 0, hover: None, click: None, setup: |a, _| {
-            let m = a.global::<Model>();
-            m.set_enabled(false);
-            m.set_engine_tone(Tone::Neutral);
-            m.set_engine_status("Off".into());
-        } },
-        Scene { name: "eq-compare", page: Page::Equalizer, main: false, tabs: 0, hover: None, click: None, setup: |a, _| a.global::<Model>().set_comparing(true) },
-        Scene { name: "eq-warnings", page: Page::Equalizer, main: false, tabs: 0, hover: None, click: None, setup: |a, e| {
-            let m = a.global::<Model>();
-            m.set_warnings(vm(vec![
-                Warning { tone: Tone::Warning, title: "Strong boost near 2.8 kHz".into(), detail: "This can sound harsh on some tracks.".into() },
-                Warning { tone: Tone::Warning, title: "Total boost is high".into(), detail: "The preamp lowers the level by 3.5 dB to keep the sound clean.".into() },
-                Warning { tone: Tone::Danger, title: "Peak is above 0 dB".into(), detail: "Turn on Auto preamp or lower the preamp to avoid distortion.".into() },
-            ]));
-            m.set_clipping(true);
-            m.set_peak_text("Peak +1.8 dB".into());
-            m.set_auto_preamp(false);
-            let _ = e;
-        } },
-        Scene { name: "eq-empty", page: Page::Equalizer, main: false, tabs: 0, hover: None, click: None, setup: |a, e| {
-            let m = a.global::<Model>();
-            {
-                let mut e = e.borrow_mut();
-                e.specs.clear();
-                e.selected = -1;
-                e.split_ears = false;
-                e.correction = false;
-                push_eq(a, &e);
-            }
-            m.set_warnings(ModelRc::default());
-            m.set_sliders(vm((0..10).map(|i| Slider10 { label: ["31", "62", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"][i].into(), gain: 0.0 }).collect()));
-            m.set_peak_text("Peak 0.0 dB".into());
-        } },
-        Scene { name: "eq-many", page: Page::Equalizer, main: false, tabs: 0, hover: None, click: None, setup: |a, e| {
-            {
+        Scene {
+            name: "eq",
+            page: Page::Equalizer,
+            main: true,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: nothing,
+        },
+        Scene {
+            name: "eq-sliders",
+            page: Page::Equalizer,
+            main: false,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: |a, _| a.global::<Model>().set_slider_view(true),
+        },
+        Scene {
+            name: "eq-off",
+            page: Page::Equalizer,
+            main: false,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: |a, _| {
+                let m = a.global::<Model>();
+                m.set_enabled(false);
+                m.set_engine_tone(Tone::Neutral);
+                m.set_engine_status("Off".into());
+            },
+        },
+        Scene {
+            name: "eq-compare",
+            page: Page::Equalizer,
+            main: false,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: |a, _| a.global::<Model>().set_comparing(true),
+        },
+        Scene {
+            name: "eq-warnings",
+            page: Page::Equalizer,
+            main: false,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: |a, e| {
+                let m = a.global::<Model>();
+                m.set_warnings(vm(vec![
+                    Warning {
+                        tone: Tone::Warning,
+                        title: "Strong boost near 2.8 kHz".into(),
+                        detail: "This can sound harsh on some tracks.".into(),
+                    },
+                    Warning {
+                        tone: Tone::Warning,
+                        title: "Total boost is high".into(),
+                        detail: "The preamp lowers the level by 3.5 dB to keep the sound clean.".into(),
+                    },
+                    Warning {
+                        tone: Tone::Danger,
+                        title: "Peak is above 0 dB".into(),
+                        detail: "Turn on Auto preamp or lower the preamp to avoid distortion.".into(),
+                    },
+                ]));
+                m.set_clipping(true);
+                m.set_peak_text("Peak +1.8 dB".into());
+                m.set_auto_preamp(false);
+                let _ = e;
+            },
+        },
+        Scene {
+            name: "eq-empty",
+            page: Page::Equalizer,
+            main: false,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: |a, e| {
+                let m = a.global::<Model>();
+                {
+                    let mut e = e.borrow_mut();
+                    e.specs.clear();
+                    e.selected = -1;
+                    e.split_ears = false;
+                    e.correction = false;
+                    push_eq(a, &e);
+                }
+                m.set_warnings(ModelRc::default());
+                m.set_sliders(vm((0..10)
+                    .map(|i| Slider10 {
+                        label: ["31", "62", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"][i].into(),
+                        gain: 0.0,
+                    })
+                    .collect()));
+                m.set_peak_text("Peak 0.0 dB".into());
+            },
+        },
+        Scene {
+            name: "eq-many",
+            page: Page::Equalizer,
+            main: false,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: |a, e| {
                 let mut e = e.borrow_mut();
                 let mut v = Vec::new();
                 for i in 0..28 {
                     let f = 20.0 * 1000f64.powf(i as f64 / 27.0);
-                    v.push(Spec { on: i % 9 != 5, kind: 0, channel: 0, freq: f, gain: ((i * 7) % 9) as f64 - 4.0, q: 2.5, warn: i == 12 });
+                    v.push(Spec {
+                        on: i % 9 != 5,
+                        kind: 0,
+                        channel: 0,
+                        freq: f,
+                        gain: ((i * 7) % 9) as f64 - 4.0,
+                        q: 2.5,
+                        warn: i == 12,
+                    });
                 }
                 e.specs = v;
                 e.selected = 13;
                 e.split_ears = false;
                 push_eq(a, &e);
-            }
-        } },
-        Scene { name: "eq-focus", page: Page::Equalizer, main: false, tabs: 4, hover: None, click: None, setup: nothing },
-        Scene { name: "eq-hover", page: Page::Equalizer, main: false, tabs: 0, hover: Some((1010.0, 94.0)), click: None, setup: nothing },
-        Scene { name: "hover-handle", page: Page::Equalizer, main: false, tabs: 0, hover: Some((650.0, 331.0)), click: None, setup: |a, e| {
-            let mut e = e.borrow_mut();
-            e.selected = 2;
-            push_eq(a, &e);
-        } },
-        Scene { name: "settings-focus", page: Page::Settings, main: false, tabs: 12, hover: None, click: None, setup: nothing },
-        Scene { name: "eq-select", page: Page::Equalizer, main: false, tabs: 0, hover: None, click: Some((370.0, 720.0)), setup: nothing },
-        Scene { name: "eq-toast", page: Page::Equalizer, main: false, tabs: 0, hover: None, click: None, setup: |a, _| {
-            let m = a.global::<Model>();
-            m.set_toast("Removed band 6".into());
-            m.set_toast_can_undo(true);
-        } },
-        Scene { name: "headphones", page: Page::Headphones, main: true, tabs: 0, hover: None, click: None, setup: nothing },
-        Scene { name: "headphones-many", page: Page::Headphones, main: false, tabs: 0, hover: Some((600.0, 480.0)), click: None, setup: |a, _| {
-            let m = a.global::<Model>();
-            m.set_headphone_total(5200);
-            m.set_headphone_matches(5200);
-            let rows: Vec<HeadphoneRow> = (0..5200).map(|i| HeadphoneRow { name: format!("Model {i:04} Studio Monitor").into(), source: "Sample source, measured on a GRAS 45CA".into(), form: "Over-ear".into(), active: i == 0 }).collect();
-            m.set_headphone_results(vm(rows));
-        } },
-        Scene { name: "headphones-none", page: Page::Headphones, main: false, tabs: 0, hover: None, click: None, setup: |a, _| {
-            let m = a.global::<Model>();
-            m.set_headphone_active("".into());
-        } },
-        Scene { name: "headphones-nomatch", page: Page::Headphones, main: false, tabs: 0, hover: None, click: None, setup: |a, _| {
-            let m = a.global::<Model>();
-            m.set_headphone_active("".into());
-            m.set_headphone_query("sennhauser hd9000".into());
-            m.set_headphone_results(ModelRc::default());
-            m.set_headphone_matches(0);
-        } },
-        Scene { name: "headphones-nodb", page: Page::Headphones, main: false, tabs: 0, hover: None, click: None, setup: |a, _| {
-            let m = a.global::<Model>();
-            m.set_headphone_active("".into());
-            m.set_headphone_results(ModelRc::default());
-            m.set_headphone_total(0);
-            m.set_headphone_matches(0);
-        } },
-        Scene { name: "hearing-intro", page: Page::Hearing, main: true, tabs: 0, hover: None, click: None, setup: |a, _| a.global::<Model>().set_hearing_step(0) },
-        Scene { name: "hearing-running", page: Page::Hearing, main: true, tabs: 0, hover: None, click: None, setup: |a, _| a.global::<Model>().set_hearing_step(1) },
-        Scene { name: "hearing-result", page: Page::Hearing, main: true, tabs: 0, hover: None, click: None, setup: |a, _| a.global::<Model>().set_hearing_step(2) },
-        Scene { name: "assistant", page: Page::Assistant, main: true, tabs: 0, hover: None, click: None, setup: nothing },
-        Scene { name: "assistant-busy", page: Page::Assistant, main: false, tabs: 0, hover: None, click: None, setup: |a, _| {
-            let m = a.global::<Model>();
-            m.set_assistant_busy(true);
-            let mut rows: Vec<ChatRow> = m.get_chat().iter().collect();
-            rows.push(ChatRow { from_user: false, text: "Thinking".into(), tone: Tone::Busy, changes: ModelRc::default(), state: 0, origin: "Anthropic, claude-sonnet".into() });
-            m.set_chat(vm(rows));
-        } },
-        Scene { name: "assistant-empty", page: Page::Assistant, main: false, tabs: 0, hover: None, click: None, setup: |a, _| {
-            let m = a.global::<Model>();
-            m.set_chat(ModelRc::default());
-            m.set_assistant_provider("Built-in rules".into());
-        } },
-        Scene { name: "assistant-states", page: Page::Assistant, main: false, tabs: 0, hover: None, click: None, setup: |a, _| {
-            let m = a.global::<Model>();
-            let mut rows: Vec<ChatRow> = m.get_chat().iter().collect();
-            rows[3].state = 3;
-            rows.push(ChatRow { from_user: true, text: "Try again with less treble.".into(), tone: Tone::Neutral, changes: ModelRc::default(), state: 0, origin: "".into() });
-            rows.push(ChatRow { from_user: false, text: "I could not reach the provider. Check the connection in Settings and try again.".into(), tone: Tone::Danger, changes: ModelRc::default(), state: 0, origin: "Anthropic, claude-sonnet".into() });
-            m.set_chat(vm(rows));
-        } },
-        Scene { name: "presets", page: Page::Presets, main: true, tabs: 0, hover: None, click: None, setup: nothing },
-        Scene { name: "presets-dialog", page: Page::Presets, main: false, tabs: 0, hover: None, click: None, setup: |a, _| a.global::<Model>().set_name_dialog(true) },
-        Scene { name: "system", page: Page::System, main: true, tabs: 0, hover: None, click: None, setup: nothing },
-        Scene { name: "settings", page: Page::Settings, main: true, tabs: 0, hover: None, click: None, setup: nothing },
-        Scene { name: "settings-local", page: Page::Settings, main: false, tabs: 0, hover: None, click: None, setup: |a, _| {
-            let m = a.global::<Model>();
-            m.set_provider(3);
-            m.set_provider_needs_url(true);
-            m.set_provider_needs_key(false);
-            m.set_provider_has_key(false);
-            m.set_provider_url("http://localhost:11434".into());
-            m.set_provider_models(ModelRc::default());
-            m.set_provider_model("llama3.1".into());
-            m.set_provider_status("Could not reach the server. Is Ollama running?".into());
-            m.set_provider_status_tone(Tone::Danger);
-            m.set_start_at_login_supported(false);
-            m.set_theme_mode(0);
-        } },
-        Scene { name: "about", page: Page::About, main: true, tabs: 0, hover: None, click: None, setup: nothing },
+            },
+        },
+        Scene {
+            name: "eq-focus",
+            page: Page::Equalizer,
+            main: false,
+            tabs: 4,
+            hover: None,
+            click: None,
+            setup: nothing,
+        },
+        Scene {
+            name: "eq-hover",
+            page: Page::Equalizer,
+            main: false,
+            tabs: 0,
+            hover: Some((1010.0, 94.0)),
+            click: None,
+            setup: nothing,
+        },
+        Scene {
+            name: "hover-handle",
+            page: Page::Equalizer,
+            main: false,
+            tabs: 0,
+            hover: Some((650.0, 331.0)),
+            click: None,
+            setup: |a, e| {
+                let mut e = e.borrow_mut();
+                e.selected = 2;
+                push_eq(a, &e);
+            },
+        },
+        Scene {
+            name: "settings-focus",
+            page: Page::Settings,
+            main: false,
+            tabs: 12,
+            hover: None,
+            click: None,
+            setup: nothing,
+        },
+        Scene {
+            name: "eq-select",
+            page: Page::Equalizer,
+            main: false,
+            tabs: 0,
+            hover: None,
+            click: Some((370.0, 720.0)),
+            setup: nothing,
+        },
+        Scene {
+            name: "eq-toast",
+            page: Page::Equalizer,
+            main: false,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: |a, _| {
+                let m = a.global::<Model>();
+                m.set_toast("Removed band 6".into());
+                m.set_toast_can_undo(true);
+            },
+        },
+        Scene {
+            name: "headphones",
+            page: Page::Headphones,
+            main: true,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: nothing,
+        },
+        Scene {
+            name: "headphones-many",
+            page: Page::Headphones,
+            main: false,
+            tabs: 0,
+            hover: Some((600.0, 480.0)),
+            click: None,
+            setup: |a, _| {
+                let m = a.global::<Model>();
+                m.set_headphone_total(5200);
+                m.set_headphone_matches(5200);
+                let rows: Vec<HeadphoneRow> = (0..5200)
+                    .map(|i| HeadphoneRow {
+                        name: format!("Model {i:04} Studio Monitor").into(),
+                        source: "Sample source, measured on a GRAS 45CA".into(),
+                        form: "Over-ear".into(),
+                        active: i == 0,
+                    })
+                    .collect();
+                m.set_headphone_results(vm(rows));
+            },
+        },
+        Scene {
+            name: "headphones-none",
+            page: Page::Headphones,
+            main: false,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: |a, _| {
+                let m = a.global::<Model>();
+                m.set_headphone_active("".into());
+            },
+        },
+        Scene {
+            name: "headphones-nomatch",
+            page: Page::Headphones,
+            main: false,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: |a, _| {
+                let m = a.global::<Model>();
+                m.set_headphone_active("".into());
+                m.set_headphone_query("sennhauser hd9000".into());
+                m.set_headphone_results(ModelRc::default());
+                m.set_headphone_matches(0);
+            },
+        },
+        Scene {
+            name: "headphones-nodb",
+            page: Page::Headphones,
+            main: false,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: |a, _| {
+                let m = a.global::<Model>();
+                m.set_headphone_active("".into());
+                m.set_headphone_results(ModelRc::default());
+                m.set_headphone_total(0);
+                m.set_headphone_matches(0);
+            },
+        },
+        Scene {
+            name: "hearing-intro",
+            page: Page::Hearing,
+            main: true,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: |a, _| a.global::<Model>().set_hearing_step(0),
+        },
+        Scene {
+            name: "hearing-running",
+            page: Page::Hearing,
+            main: true,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: |a, _| a.global::<Model>().set_hearing_step(1),
+        },
+        Scene {
+            name: "hearing-result",
+            page: Page::Hearing,
+            main: true,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: |a, _| a.global::<Model>().set_hearing_step(2),
+        },
+        Scene {
+            name: "assistant",
+            page: Page::Assistant,
+            main: true,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: nothing,
+        },
+        Scene {
+            name: "assistant-busy",
+            page: Page::Assistant,
+            main: false,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: |a, _| {
+                let m = a.global::<Model>();
+                m.set_assistant_busy(true);
+                let mut rows: Vec<ChatRow> = m.get_chat().iter().collect();
+                rows.push(ChatRow {
+                    from_user: false,
+                    text: "Thinking".into(),
+                    tone: Tone::Busy,
+                    changes: ModelRc::default(),
+                    state: 0,
+                    origin: "Anthropic, claude-sonnet".into(),
+                });
+                m.set_chat(vm(rows));
+            },
+        },
+        Scene {
+            name: "assistant-empty",
+            page: Page::Assistant,
+            main: false,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: |a, _| {
+                let m = a.global::<Model>();
+                m.set_chat(ModelRc::default());
+                m.set_assistant_provider("Built-in rules".into());
+            },
+        },
+        Scene {
+            name: "assistant-states",
+            page: Page::Assistant,
+            main: false,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: |a, _| {
+                let m = a.global::<Model>();
+                let mut rows: Vec<ChatRow> = m.get_chat().iter().collect();
+                rows[3].state = 3;
+                rows.push(ChatRow {
+                    from_user: true,
+                    text: "Try again with less treble.".into(),
+                    tone: Tone::Neutral,
+                    changes: ModelRc::default(),
+                    state: 0,
+                    origin: "".into(),
+                });
+                rows.push(ChatRow {
+                    from_user: false,
+                    text: "I could not reach the provider. Check the connection in Settings and try again."
+                        .into(),
+                    tone: Tone::Danger,
+                    changes: ModelRc::default(),
+                    state: 0,
+                    origin: "Anthropic, claude-sonnet".into(),
+                });
+                m.set_chat(vm(rows));
+            },
+        },
+        Scene {
+            name: "presets",
+            page: Page::Presets,
+            main: true,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: nothing,
+        },
+        Scene {
+            name: "presets-dialog",
+            page: Page::Presets,
+            main: false,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: |a, _| a.global::<Model>().set_name_dialog(true),
+        },
+        Scene {
+            name: "system",
+            page: Page::System,
+            main: true,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: nothing,
+        },
+        Scene {
+            name: "settings",
+            page: Page::Settings,
+            main: true,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: nothing,
+        },
+        Scene {
+            name: "settings-local",
+            page: Page::Settings,
+            main: false,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: |a, _| {
+                let m = a.global::<Model>();
+                m.set_provider(3);
+                m.set_provider_needs_url(true);
+                m.set_provider_needs_key(false);
+                m.set_provider_has_key(false);
+                m.set_provider_url("http://localhost:11434".into());
+                m.set_provider_models(ModelRc::default());
+                m.set_provider_model("llama3.1".into());
+                m.set_provider_status("Could not reach the server. Is Ollama running?".into());
+                m.set_provider_status_tone(Tone::Danger);
+                m.set_start_at_login_supported(false);
+                m.set_theme_mode(0);
+            },
+        },
+        Scene {
+            name: "about",
+            page: Page::About,
+            main: true,
+            tabs: 0,
+            hover: None,
+            click: None,
+            setup: nothing,
+        },
     ]
 }
 
@@ -577,8 +994,8 @@ fn settle(win: &Rc<MinimalSoftwareWindow>, w: u32, h: u32) {
 }
 
 fn selftest(app: &AppWindow, win: &Rc<MinimalSoftwareWindow>, eq: &Rc<RefCell<Eq>>) {
-    use slint::platform::{Key, PointerEventButton};
     use slint::LogicalPosition;
+    use slint::platform::{Key, PointerEventButton};
     let (w, h) = (1180u32, 760u32);
     fill_base(app, eq);
     let m = app.global::<Model>();
@@ -603,8 +1020,8 @@ fn selftest(app: &AppWindow, win: &Rc<MinimalSoftwareWindow>, eq: &Rc<RefCell<Eq
     rec!(on_band_set_on, "set-on", |i, v| format!("{i},{v}"));
     rec!(on_band_nudge, "nudge", |i, f, s| format!("{i},{f},{s}"));
     rec!(on_band_set_freq, "set-freq", |i, t| format!("{i},{t}"));
-    rec!(on_undo, "undo", | | "");
-    rec!(on_redo, "redo", | | "");
+    rec!(on_undo, "undo", || "");
+    rec!(on_redo, "redo", || "");
     rec!(on_set_comparing, "comparing", |v| format!("{v}"));
     rec!(on_slider_changed, "slider", |i, v| format!("{i},{v:.1}"));
     rec!(on_slider_released, "slider-end", |i| format!("{i}"));
@@ -625,10 +1042,16 @@ fn selftest(app: &AppWindow, win: &Rc<MinimalSoftwareWindow>, eq: &Rc<RefCell<Eq
     };
     let down = |x: f32, y: f32| {
         win.dispatch_event(WindowEvent::PointerMoved { position: pos(x, y) });
-        win.dispatch_event(WindowEvent::PointerPressed { position: pos(x, y), button: PointerEventButton::Left });
+        win.dispatch_event(WindowEvent::PointerPressed {
+            position: pos(x, y),
+            button: PointerEventButton::Left,
+        });
     };
     let up = |x: f32, y: f32| {
-        win.dispatch_event(WindowEvent::PointerReleased { position: pos(x, y), button: PointerEventButton::Left });
+        win.dispatch_event(WindowEvent::PointerReleased {
+            position: pos(x, y),
+            button: PointerEventButton::Left,
+        });
         settle(win, w, h);
     };
     let key = |k: slint::SharedString| {
@@ -655,10 +1078,12 @@ fn selftest(app: &AppWindow, win: &Rc<MinimalSoftwareWindow>, eq: &Rc<RefCell<Eq
     let last = drags.last().map(|s| s.to_string()).unwrap_or_default();
     let want_x = (bx + 60.0 - ox) / pw;
     let want_y = (by - 40.0 - oy) / ph;
-    let ok = last.starts_with("drag:1,") && {
-        let parts: Vec<f32> = last[7..].split(',').filter_map(|p| p.parse().ok()).collect();
-        parts.len() == 2 && (parts[0] - want_x).abs() < 0.01 && (parts[1] - want_y).abs() < 0.01
-    } && ev.iter().any(|e| e == "drag-end:1");
+    let ok = last.starts_with("drag:1,")
+        && {
+            let parts: Vec<f32> = last[7..].split(',').filter_map(|p| p.parse().ok()).collect();
+            parts.len() == 2 && (parts[0] - want_x).abs() < 0.01 && (parts[1] - want_y).abs() < 0.01
+        }
+        && ev.iter().any(|e| e == "drag-end:1");
     check("drag a handle", ok, format!("last={last} want=({want_x:.3},{want_y:.3}) events={}", ev.len()));
     check("press selects band", m.get_selected_band() == 1, format!("selected={}", m.get_selected_band()));
 
@@ -670,7 +1095,11 @@ fn selftest(app: &AppWindow, win: &Rc<MinimalSoftwareWindow>, eq: &Rc<RefCell<Eq
     down(ex, ey);
     up(ex, ey);
     let ev = take(&log);
-    check("double click empty adds band", ev.iter().any(|e| e.starts_with("add:0.300,0.8")), format!("{ev:?}"));
+    check(
+        "double click empty adds band",
+        ev.iter().any(|e| e.starts_with("add:0.300,0.8")),
+        format!("{ev:?}"),
+    );
 
     // 3. double click a handle toggles it
     let (hx, hy) = band(3);
@@ -687,7 +1116,11 @@ fn selftest(app: &AppWindow, win: &Rc<MinimalSoftwareWindow>, eq: &Rc<RefCell<Eq
     settle(win, w, h);
     let ev = take(&log);
     check("wheel over handle", ev.iter().any(|e| e.starts_with("width:3,")), format!("{ev:?}"));
-    win.dispatch_event(WindowEvent::PointerScrolled { position: pos(ox + 0.5 * pw, oy + 0.8 * ph), delta_x: 0.0, delta_y: -60.0 });
+    win.dispatch_event(WindowEvent::PointerScrolled {
+        position: pos(ox + 0.5 * pw, oy + 0.8 * ph),
+        delta_x: 0.0,
+        delta_y: -60.0,
+    });
     settle(win, w, h);
     let ev = take(&log);
     check("wheel over graph with selection", ev.iter().any(|e| e.starts_with("width:3,")), format!("{ev:?}"));
@@ -699,7 +1132,9 @@ fn selftest(app: &AppWindow, win: &Rc<MinimalSoftwareWindow>, eq: &Rc<RefCell<Eq
     let ev = take(&log);
     check(
         "arrows nudge, delete removes",
-        ev.iter().any(|e| e == "nudge:3,0,1") && ev.iter().any(|e| e == "nudge:3,1,1") && ev.iter().any(|e| e == "remove:3"),
+        ev.iter().any(|e| e == "nudge:3,0,1")
+            && ev.iter().any(|e| e == "nudge:3,1,1")
+            && ev.iter().any(|e| e == "remove:3"),
         format!("{ev:?}"),
     );
 
@@ -712,7 +1147,11 @@ fn selftest(app: &AppWindow, win: &Rc<MinimalSoftwareWindow>, eq: &Rc<RefCell<Eq
     win.dispatch_event(WindowEvent::KeyReleased { text: Key::Control.into() });
     settle(win, w, h);
     let ev = take(&log);
-    check("ctrl+z undo, ctrl+shift+z redo", ev.iter().any(|e| e == "undo:") && ev.iter().any(|e| e == "redo:"), format!("{ev:?}"));
+    check(
+        "ctrl+z undo, ctrl+shift+z redo",
+        ev.iter().any(|e| e == "undo:") && ev.iter().any(|e| e == "redo:"),
+        format!("{ev:?}"),
+    );
 
     // 7. compare: press and hold
     let (cx, cy) = (1025.0, 28.0);
@@ -748,7 +1187,12 @@ fn selftest(app: &AppWindow, win: &Rc<MinimalSoftwareWindow>, eq: &Rc<RefCell<Eq
     up(tx, ty - track_h * 0.25);
     let ev = take(&log);
     let sl: Vec<&String> = ev.iter().filter(|e| e.starts_with("slider:")).collect();
-    check("drag a slider", sl.last().map(|s| s.starts_with("slider:3,")).unwrap_or(false) && ev.iter().any(|e| e == "slider-end:3"), format!("{:?}", sl.last()));
+    check(
+        "drag a slider",
+        sl.last().map(|s| s.starts_with("slider:3,")).unwrap_or(false)
+            && ev.iter().any(|e| e == "slider-end:3"),
+        format!("{:?}", sl.last()),
+    );
     // double click resets
     down(tx, ty);
     up(tx, ty);
@@ -771,7 +1215,11 @@ fn selftest(app: &AppWindow, win: &Rc<MinimalSoftwareWindow>, eq: &Rc<RefCell<Eq
     }
     key(Key::Return.into());
     let ev = take(&log);
-    check("typed frequency commits on Enter", ev.iter().any(|e| e.starts_with("set-freq:2,") && e.contains("1.5k")), format!("{ev:?}"));
+    check(
+        "typed frequency commits on Enter",
+        ev.iter().any(|e| e.starts_with("set-freq:2,") && e.contains("1.5k")),
+        format!("{ev:?}"),
+    );
 
     // 11. preset row click and nav
     m.set_page(Page::Presets);
@@ -784,7 +1232,11 @@ fn selftest(app: &AppWindow, win: &Rc<MinimalSoftwareWindow>, eq: &Rc<RefCell<Eq
     let (nx, ny) = (100.0, 241.0);
     down(nx, ny - 120.0);
     up(nx, ny - 120.0);
-    check("nav item switches page", m.get_page() == Page::Headphones || m.get_page() == Page::Equalizer, format!("page={:?}", m.get_page() as i32));
+    check(
+        "nav item switches page",
+        m.get_page() == Page::Headphones || m.get_page() == Page::Equalizer,
+        format!("page={:?}", m.get_page() as i32),
+    );
 
     let failed = results.iter().filter(|r| !r.1).count();
     println!("{} checks, {} failed", results.len(), failed);
@@ -828,7 +1280,13 @@ fn main() {
     let app = AppWindow::new().unwrap();
     app.show().unwrap();
 
-    let eq = Rc::new(RefCell::new(Eq { specs: vec![], selected: -1, plot: (900.0, 330.0), split_ears: true, correction: true }));
+    let eq = Rc::new(RefCell::new(Eq {
+        specs: vec![],
+        selected: -1,
+        plot: (900.0, 330.0),
+        split_ears: true,
+        correction: true,
+    }));
     {
         let weak = app.as_weak();
         let eq2 = eq.clone();
@@ -895,19 +1353,31 @@ fn main() {
                     if scene.tabs > 0 || scene.hover.is_some() || scene.click.is_some() {
                         settle(&win, pw, ph);
                         for _ in 0..scene.tabs {
-                            win.dispatch_event(WindowEvent::KeyPressed { text: slint::platform::Key::Tab.into() });
-                            win.dispatch_event(WindowEvent::KeyReleased { text: slint::platform::Key::Tab.into() });
+                            win.dispatch_event(WindowEvent::KeyPressed {
+                                text: slint::platform::Key::Tab.into(),
+                            });
+                            win.dispatch_event(WindowEvent::KeyReleased {
+                                text: slint::platform::Key::Tab.into(),
+                            });
                             settle(&win, pw, ph);
                         }
                         if let Some((cx, cy)) = scene.click {
                             let p = slint::LogicalPosition::new(cx, cy);
                             win.dispatch_event(WindowEvent::PointerMoved { position: p });
-                            win.dispatch_event(WindowEvent::PointerPressed { position: p, button: slint::platform::PointerEventButton::Left });
-                            win.dispatch_event(WindowEvent::PointerReleased { position: p, button: slint::platform::PointerEventButton::Left });
+                            win.dispatch_event(WindowEvent::PointerPressed {
+                                position: p,
+                                button: slint::platform::PointerEventButton::Left,
+                            });
+                            win.dispatch_event(WindowEvent::PointerReleased {
+                                position: p,
+                                button: slint::platform::PointerEventButton::Left,
+                            });
                             settle(&win, pw, ph);
                         }
                         if let Some((hx, hy)) = scene.hover {
-                            win.dispatch_event(WindowEvent::PointerMoved { position: slint::LogicalPosition::new(hx, hy) });
+                            win.dispatch_event(WindowEvent::PointerMoved {
+                                position: slint::LogicalPosition::new(hx, hy),
+                            });
                         }
                     }
                     for _ in 0..3 {

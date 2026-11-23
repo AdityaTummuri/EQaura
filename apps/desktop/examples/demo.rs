@@ -48,7 +48,11 @@ impl Backend for Studio {
     }
     fn checks(&mut self) -> Vec<Check> {
         vec![
-            Check::new(Level::Good, "The sound engine is active", "It keeps working when this window is closed."),
+            Check::new(
+                Level::Good,
+                "The sound engine is active",
+                "It keeps working when this window is closed.",
+            ),
             Check::new(Level::Good, "Studio headphones", "The equalizer works on this device."),
             Check::new(
                 Level::Warning,
@@ -145,7 +149,11 @@ fn main() {
     window.set_size(slint::PhysicalSize::new(size.0, size.1));
     slint::platform::set_platform(Box::new(Headless(window.clone()))).unwrap();
     let ui = AppWindow::new().unwrap();
-    app::start_with(&ui, Store::at(home.clone()), Box::new(Immediate::new(Box::new(Studio), Box::new(app::event))));
+    app::start_with(
+        &ui,
+        Store::at(home.clone()),
+        Box::new(Immediate::new(Box::new(Studio), Box::new(app::event))),
+    );
     ui.show().unwrap();
     app::event(Event::Devices(Studio.devices()));
     app::event(Event::Status(Studio.status()));

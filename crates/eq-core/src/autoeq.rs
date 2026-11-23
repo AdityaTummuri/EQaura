@@ -92,9 +92,9 @@ pub fn search(query: &str) -> Vec<usize> {
             0
         } else if name.starts_with(&q) {
             1
-        } else if words.iter().all(|w| name.split(' ').any(|n| n.starts_with(w))) {
-            2
-        } else if word_starts(name).any(|s| s.replace(' ', "").starts_with(&squashed_q)) {
+        } else if words.iter().all(|w| name.split(' ').any(|n| n.starts_with(w)))
+            || word_starts(name).any(|s| s.replace(' ', "").starts_with(&squashed_q))
+        {
             2
         } else if squashed.contains(&squashed_q) {
             3

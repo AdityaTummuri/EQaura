@@ -428,7 +428,11 @@ impl Core {
             m.set_curve_selected(selected_path.into());
             m.set_grid_y(ModelRc::new(VecModel::from(graph::grid_y(range))));
             if !dragging {
-                m.set_slider_range(if slider_top > 12.0 { graph::range_for(slider_top) as f32 } else { 12.0 });
+                m.set_slider_range(if slider_top > 12.0 {
+                    graph::range_for(slider_top) as f32
+                } else {
+                    12.0
+                });
             }
             m.set_preamp(chain.preamp_db as f32);
             m.set_auto_preamp(p.preamp.auto);
@@ -552,7 +556,11 @@ impl Core {
 
     fn profile_label(&self, id: &str) -> String {
         match self.devices.devices.get(id) {
-            Some(d) if d.profile.filters.is_empty() && d.profile.headphone.is_none() && d.profile.hearing.is_none() => {
+            Some(d)
+                if d.profile.filters.is_empty()
+                    && d.profile.headphone.is_none()
+                    && d.profile.hearing.is_none() =>
+            {
                 "Flat".into()
             }
             Some(d) => d.preset.clone().unwrap_or_else(|| "Custom".into()),
@@ -756,7 +764,8 @@ impl Core {
                     1 => "1 band".into(),
                     n => slint::format!("{n} bands"),
                 },
-                active: self.preset.as_ref() == Some(&p.name) || (self.preset.is_none() && i == 0 && !self.is_dirty()),
+                active: self.preset.as_ref() == Some(&p.name)
+                    || (self.preset.is_none() && i == 0 && !self.is_dirty()),
                 builtin: i < self.builtin,
             })
             .collect();
@@ -791,12 +800,7 @@ impl Core {
             self.toast(Tone::Warning, "A built-in preset already has this name", false);
             return;
         }
-        let p = Profile {
-            name: name.into(),
-            headphone: None,
-            hearing: None,
-            ..self.profile.clone()
-        };
+        let p = Profile { name: name.into(), headphone: None, hearing: None, ..self.profile.clone() };
         match self.store.save_preset(&p) {
             Ok(()) => {
                 self.preset = Some(name.into());
@@ -935,7 +939,9 @@ impl Core {
     }
 
     fn headphone_pick(&mut self, i: i32) {
-        let Some(e) = index(i).and_then(|i| self.results.get(i)).and_then(|i| autoeq::get(*i)) else { return };
+        let Some(e) = index(i).and_then(|i| self.results.get(i)).and_then(|i| autoeq::get(*i)) else {
+            return;
+        };
         self.seal();
         self.edit(None, |p| {
             p.headphone = Some(Correction {
@@ -1099,7 +1105,10 @@ impl Core {
     fn refresh_privacy_text(&self) {
         let sends = match self.settings.ai {
             AiChoice::Rules => "Nothing. The built-in rules run on this computer.".to_owned(),
-            _ => format!("Your message, your last few messages in this chat, and:\n{}", self.ai_context().summary()),
+            _ => format!(
+                "Your message, your last few messages in this chat, and:\n{}",
+                self.ai_context().summary()
+            ),
         };
         self.set(|m| m.set_assistant_sends(sends.trim_end().into()));
     }
@@ -1215,11 +1224,16 @@ impl Core {
     }
 
     fn assistant_apply(&mut self, i: i32) {
-        let Some(i) = index(i).filter(|i| self.chat.get(*i).is_some_and(|c| matches!(c.state, 1 | 3 | 4))) else {
+        let Some(i) = index(i).filter(|i| self.chat.get(*i).is_some_and(|c| matches!(c.state, 1 | 3 | 4)))
+        else {
             return;
         };
         if self.chat[i].before != self.profile.filters {
-            self.toast(Tone::Warning, "Your bands changed since this suggestion. Ask again for a new one", false);
+            self.toast(
+                Tone::Warning,
+                "Your bands changed since this suggestion. Ask again for a new one",
+                false,
+            );
             return;
         }
         let changes = self.chat[i].changes.clone();
@@ -1352,7 +1366,10 @@ impl Core {
                     }
                     match result {
                         Ok(models) if models.is_empty() => {
-                            c.provider_status(Tone::Warning, "The provider lists no models. Type a model name instead.");
+                            c.provider_status(
+                                Tone::Warning,
+                                "The provider lists no models. Type a model name instead.",
+                            );
                         }
                         Ok(models) => {
                             let text = format!("Connected. {} models available.", models.len());
@@ -1378,7 +1395,11 @@ impl Core {
             std::env::consts::ARCH
         );
         s += &format!("Enabled: {}\nOutput devices: {}\n", self.settings.enabled, self.outputs.len());
-        s += &format!("Bands: {}\nAssistant: {}\n\nChecks\n", self.profile.filters.len(), self.settings.ai.id());
+        s += &format!(
+            "Bands: {}\nAssistant: {}\n\nChecks\n",
+            self.profile.filters.len(),
+            self.settings.ai.id()
+        );
         for c in &self.checks {
             s += &format!("[{:?}] {}: {}\n", c.level, c.title, c.detail);
         }
@@ -1394,7 +1415,10 @@ impl Core {
 }
 
 /// Runs a file dialog outside the state borrow, so the window stays alive.
-fn pick_file(f: impl FnOnce() -> Option<std::path::PathBuf> + 'static, then: impl FnOnce(&mut Core, std::path::PathBuf) + 'static) {
+fn pick_file(
+    f: impl FnOnce() -> Option<std::path::PathBuf> + 'static,
+    then: impl FnOnce(&mut Core, std::path::PathBuf) + 'static,
+) {
     Timer::single_shot(Duration::ZERO, move || {
         if let Some(path) = f() {
             with(move |c| then(c, path));
@@ -1804,7 +1828,12 @@ fn connect(ui: &AppWindow) {
     });
     m.on_export_diagnostics(|| {
         pick_file(
-            || rfd::FileDialog::new().set_title("Save diagnostics").set_file_name("EQaura diagnostics.txt").save_file(),
+            || {
+                rfd::FileDialog::new()
+                    .set_title("Save diagnostics")
+                    .set_file_name("EQaura diagnostics.txt")
+                    .save_file()
+            },
             |c, path| match std::fs::write(&path, c.diagnostics()) {
                 Ok(()) => c.toast(Tone::Good, "Diagnostics saved", false),
                 Err(e) => c.toast(Tone::Danger, &format!("The file could not be written: {e}"), false),

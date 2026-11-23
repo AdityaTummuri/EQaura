@@ -27,7 +27,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let window = AppWindow::new()?;
     let demo = std::env::var_os("EQAURA_DEMO").is_some();
     app::start(&window, Store::at(dir.clone()), |events| {
-        worker::spawn(move || if demo { Box::new(eq_backend::Demo::new(dir)) } else { eq_backend::system(dir) }, events)
+        worker::spawn(
+            move || if demo { Box::new(eq_backend::Demo::new(dir)) } else { eq_backend::system(dir) },
+            events,
+        )
     });
     let result = window.run();
     app::finish();

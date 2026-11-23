@@ -16,12 +16,8 @@ fn analog_db(f: &Filter, freq: f64) -> f64 {
     let c = |re: f64, im: f64| re * re + im * im;
     let r = match f.kind {
         Kind::Peaking => c(1.0 - w * w, w * a / q) / c(1.0 - w * w, w / (a * q)),
-        Kind::LowShelf => {
-            a * a * c(a - w * w, w * a.sqrt() / q) / c(1.0 - a * w * w, w * a.sqrt() / q)
-        }
-        Kind::HighShelf => {
-            a * a * c(1.0 - a * w * w, w * a.sqrt() / q) / c(a - w * w, w * a.sqrt() / q)
-        }
+        Kind::LowShelf => a * a * c(a - w * w, w * a.sqrt() / q) / c(1.0 - a * w * w, w * a.sqrt() / q),
+        Kind::HighShelf => a * a * c(1.0 - a * w * w, w * a.sqrt() / q) / c(a - w * w, w * a.sqrt() / q),
         Kind::LowPass => 1.0 / c(1.0 - w * w, w / q),
         Kind::HighPass => (w * w) * (w * w) / c(1.0 - w * w, w / q),
         Kind::Notch => c(1.0 - w * w, 0.0) / c(1.0 - w * w, w / q),
@@ -104,11 +100,7 @@ fn bad_input_samples_do_not_poison_the_filter() {
 
 fn any_filter() -> impl Strategy<Value = Filter> {
     (0..6usize, 1.0f64..30_000.0, -40.0f64..40.0, 0.05f64..60.0, any::<bool>(), 0..3usize).prop_map(
-        |(k, f, g, q, on, c)| Filter {
-            on,
-            channel: Channel::ALL[c],
-            ..Filter::new(Kind::ALL[k], f, g, q)
-        },
+        |(k, f, g, q, on, c)| Filter { on, channel: Channel::ALL[c], ..Filter::new(Kind::ALL[k], f, g, q) },
     )
 }
 
@@ -116,7 +108,10 @@ fn any_profile() -> impl Strategy<Value = Profile> {
     (
         prop::collection::vec(any_filter(), 0..30),
         prop::option::of((prop::collection::vec(any_filter(), 0..10), 0.0f64..1.0)),
-        prop::option::of((prop::collection::vec(any_filter(), 0..8), prop::collection::vec(any_filter(), 0..8))),
+        prop::option::of((
+            prop::collection::vec(any_filter(), 0..8),
+            prop::collection::vec(any_filter(), 0..8),
+        )),
     )
         .prop_map(|(filters, hp, hl)| Profile {
             filters,
@@ -301,7 +296,15 @@ fn sliders_are_plain_bands() {
 
 #[test]
 fn numbers_people_type() {
-    for (s, v) in [("1.2k", 1200.0), ("1,2 kHz", 1200.0), ("1,200 Hz", 1200.0), ("\u{2212}3 dB", -3.0), ("+2,5", 2.5), ("0,125", 0.125), ("20", 20.0)] {
+    for (s, v) in [
+        ("1.2k", 1200.0),
+        ("1,2 kHz", 1200.0),
+        ("1,200 Hz", 1200.0),
+        ("\u{2212}3 dB", -3.0),
+        ("+2,5", 2.5),
+        ("0,125", 0.125),
+        ("20", 20.0),
+    ] {
         assert_eq!(text::parse_number(s), Some(v), "{s}");
     }
     for s in ["", "abc", "nan", "inf", "1e999", "--3"] {
@@ -398,10 +401,17 @@ fn changes_apply_fully_or_not_at_all() {
     assert!(change::apply_changes(&mut p, &[change::Change::Remove(0), change::Change::Remove(9)]).is_err());
     assert!(change::apply_changes(&mut p, &[change::Change::Add(Filter::peak(f64::NAN, 1.0, 1.0))]).is_err());
     assert_eq!(p, before);
-    change::apply_changes(&mut p, &[change::Change::Remove(0), change::Change::Update(2, Filter::peak(500.0, 2.0, 1.0))]).unwrap();
+    change::apply_changes(
+        &mut p,
+        &[change::Change::Remove(0), change::Change::Update(2, Filter::peak(500.0, 2.0, 1.0))],
+    )
+    .unwrap();
     assert_eq!(p.filters.len(), 2);
     assert_eq!(p.filters[1].freq_hz, 500.0);
-    assert_eq!(change::describe_change(&before.filters, &change::Change::Remove(0)), "Remove band 1 (peak at 100 Hz, +1 dB, Q 1)");
+    assert_eq!(
+        change::describe_change(&before.filters, &change::Change::Remove(0)),
+        "Remove band 1 (peak at 100 Hz, +1 dB, Q 1)"
+    );
 }
 
 /// Simulated listener with a known threshold per tone.
@@ -455,8 +465,7 @@ fn tones_start_and_end_silent() {
 
 #[test]
 fn peak_search_is_fast_enough_for_dragging() {
-    let filters: Vec<Filter> =
-        (0..40).map(|i| Filter::peak(30.0 * 1.18f64.powi(i), 5.0, 2.0)).collect();
+    let filters: Vec<Filter> = (0..40).map(|i| Filter::peak(30.0 * 1.18f64.powi(i), 5.0, 2.0)).collect();
     let t = std::time::Instant::now();
     for _ in 0..20 {
         std::hint::black_box(curve::peak_db(&filters, FS));

@@ -48,10 +48,8 @@ const POLL: Duration = Duration::from_millis(1500);
 
 pub fn spawn(make: impl FnOnce() -> Box<dyn Backend> + Send + 'static, emit: Emit) -> Box<dyn Engine> {
     let (tx, rx) = mpsc::channel();
-    let thread = std::thread::Builder::new()
-        .name("engine".into())
-        .spawn(move || run(make(), &rx, &emit))
-        .ok();
+    let thread =
+        std::thread::Builder::new().name("engine".into()).spawn(move || run(make(), &rx, &emit)).ok();
     Box::new(Threaded { tx, thread })
 }
 

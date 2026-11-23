@@ -15,14 +15,8 @@ pub enum Kind {
 }
 
 impl Kind {
-    pub const ALL: [Kind; 6] = [
-        Kind::Peaking,
-        Kind::LowShelf,
-        Kind::HighShelf,
-        Kind::LowPass,
-        Kind::HighPass,
-        Kind::Notch,
-    ];
+    pub const ALL: [Kind; 6] =
+        [Kind::Peaking, Kind::LowShelf, Kind::HighShelf, Kind::LowPass, Kind::HighPass, Kind::Notch];
 
     pub fn has_gain(self) -> bool {
         matches!(self, Kind::Peaking | Kind::LowShelf | Kind::HighShelf)
@@ -127,14 +121,9 @@ impl Filter {
         let alpha = sin / (2.0 * self.q);
         let a = 10f64.powf(self.gain_db / 40.0);
         let (b0, b1, b2, a0, a1, a2) = match self.kind {
-            Kind::Peaking => (
-                1.0 + alpha * a,
-                -2.0 * cos,
-                1.0 - alpha * a,
-                1.0 + alpha / a,
-                -2.0 * cos,
-                1.0 - alpha / a,
-            ),
+            Kind::Peaking => {
+                (1.0 + alpha * a, -2.0 * cos, 1.0 - alpha * a, 1.0 + alpha / a, -2.0 * cos, 1.0 - alpha / a)
+            }
             Kind::LowShelf => {
                 let s = 2.0 * a.sqrt() * alpha;
                 (
@@ -157,22 +146,12 @@ impl Filter {
                     (a + 1.0) - (a - 1.0) * cos - s,
                 )
             }
-            Kind::LowPass => (
-                (1.0 - cos) / 2.0,
-                1.0 - cos,
-                (1.0 - cos) / 2.0,
-                1.0 + alpha,
-                -2.0 * cos,
-                1.0 - alpha,
-            ),
-            Kind::HighPass => (
-                (1.0 + cos) / 2.0,
-                -(1.0 + cos),
-                (1.0 + cos) / 2.0,
-                1.0 + alpha,
-                -2.0 * cos,
-                1.0 - alpha,
-            ),
+            Kind::LowPass => {
+                ((1.0 - cos) / 2.0, 1.0 - cos, (1.0 - cos) / 2.0, 1.0 + alpha, -2.0 * cos, 1.0 - alpha)
+            }
+            Kind::HighPass => {
+                ((1.0 + cos) / 2.0, -(1.0 + cos), (1.0 + cos) / 2.0, 1.0 + alpha, -2.0 * cos, 1.0 - alpha)
+            }
             Kind::Notch => (1.0, -2.0 * cos, 1.0, 1.0 + alpha, -2.0 * cos, 1.0 - alpha),
         };
         let c = Coeffs { b0: b0 / a0, b1: b1 / a0, b2: b2 / a0, a1: a1 / a0, a2: a2 / a0 };
@@ -205,8 +184,7 @@ impl Coeffs {
     pub fn power(&self, phi: f64) -> f64 {
         let part = |c0: f64, c1: f64, c2: f64| {
             let sum = c0 + c1 + c2;
-            let v = sum * sum - 4.0 * (c0 * c1 + 4.0 * c0 * c2 + c1 * c2) * phi
-                + 16.0 * c0 * c2 * phi * phi;
+            let v = sum * sum - 4.0 * (c0 * c1 + 4.0 * c0 * c2 + c1 * c2) * phi + 16.0 * c0 * c2 * phi * phi;
             v.max(1e-30)
         };
         part(self.b0, self.b1, self.b2) / part(1.0, self.a1, self.a2)

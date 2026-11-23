@@ -31,7 +31,11 @@ fn config(provider: Provider) -> Config {
 }
 
 fn ctx() -> Context {
-    Context { device: "Headphones".into(), filters: vec![Filter::peak(100.0, 2.0, 1.0)], ..Context::default() }
+    Context {
+        device: "Headphones".into(),
+        filters: vec![Filter::peak(100.0, 2.0, 1.0)],
+        ..Context::default()
+    }
 }
 
 const GOOD: &str = r#"{"reason":"Brings voices closer.","changes":[{"action":"add","band":0,"type":"peaking","freq_hz":2200,"gain_db":3,"q":0.9,"ear":"both"},{"action":"remove","band":1,"type":"peaking","freq_hz":1000,"gain_db":0,"q":1,"ear":"both"}]}"#;
@@ -90,9 +94,15 @@ fn failures_become_plain_messages_without_the_key() {
         }
     }
     let refused = r#"{"stop_reason":"refusal","content":[]}"#;
-    assert_eq!(ask(&Fake::new(&[(200, refused)]), &config(Provider::Anthropic), &ctx(), "x"), Err(AiError::Declined));
+    assert_eq!(
+        ask(&Fake::new(&[(200, refused)]), &config(Provider::Anthropic), &ctx(), "x"),
+        Err(AiError::Declined)
+    );
     let refused = r#"{"choices":[{"message":{"refusal":"no","content":null}}]}"#;
-    assert_eq!(ask(&Fake::new(&[(200, refused)]), &config(Provider::OpenAi), &ctx(), "x"), Err(AiError::Declined));
+    assert_eq!(
+        ask(&Fake::new(&[(200, refused)]), &config(Provider::OpenAi), &ctx(), "x"),
+        Err(AiError::Declined)
+    );
 }
 
 #[test]
@@ -164,8 +174,16 @@ fn rejects_unusable_answers() {
     assert_eq!(partial.changes, [Change::Update(0, Filter { gain_db: 5.0, ..f[0] })]);
     let empty = parse_answer(r#"{"reason":"Not about sound.","changes":[]}"#, &f).unwrap();
     assert!(empty.changes.is_empty());
-    let big = parse_answer(r#"{"changes":[{"action":"add","type":"low_shelf","freq_hz":60,"gain_db":40,"q":1}]}"#, &f).unwrap();
-    assert_eq!(big.changes, [Change::Add(Filter::new(Kind::LowShelf, 60.0, 40.0, 1.0))], "warned about, not clamped");
+    let big = parse_answer(
+        r#"{"changes":[{"action":"add","type":"low_shelf","freq_hz":60,"gain_db":40,"q":1}]}"#,
+        &f,
+    )
+    .unwrap();
+    assert_eq!(
+        big.changes,
+        [Change::Add(Filter::new(Kind::LowShelf, 60.0, 40.0, 1.0))],
+        "warned about, not clamped"
+    );
 }
 
 #[test]
