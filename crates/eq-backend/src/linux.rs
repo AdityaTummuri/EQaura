@@ -6,6 +6,7 @@ use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
 
 const UNIT: &str = "eqaura.service";
+const OUTPUT_FILE: &str = "output-device";
 
 pub struct Linux {
     dir: PathBuf,
@@ -48,11 +49,14 @@ impl Linux {
         let version = run("pipewire", &["--version"]).ok().as_deref().and_then(pw::read_version);
         let wireplumber = run("wireplumber", &["--version"]).ok().as_deref().and_then(pw::read_version);
         let systemd = run("systemctl", &["--user", "show", "-p", "Version"]).is_ok();
+        // Remembered across restarts, because while EQaura is the default
+        // output the system no longer says which device is behind it.
+        let real_default = std::fs::read_to_string(dir.join(OUTPUT_FILE)).ok().filter(|s| !s.is_empty());
         Self {
             dir,
             running: None,
             child: None,
-            real_default: None,
+            real_default,
             version,
             wireplumber,
             systemd,
@@ -78,7 +82,10 @@ impl Linux {
     fn real_sink(&mut self, g: &Graph) -> Option<String> {
         let exists = |n: &String| g.sinks.iter().any(|s| s.1 == *n);
         let current = g.default_sink.clone().filter(|n| n != pw::SINK && exists(n));
-        if current.is_some() {
+        if current.is_some() && current != self.real_default {
+            if let Some(name) = &current {
+                let _ = swap_file(&self.dir.join(OUTPUT_FILE), name.as_bytes());
+            }
             self.real_default = current;
         }
         self.real_default
@@ -211,11 +218,28 @@ impl Linux {
             }
         }
         let slots = pw::slots(&chain, f64::from(rate), pw::slots_for(&chain));
+        // Already running with exactly these settings, for example after the
+        // app was closed and opened again: take over without a gap.
+        if self.running.is_none()
+            && g.id_of(pw::SINK).is_some()
+            && self.service_active()
+            && std::fs::read_to_string(self.config_path()).ok() == Some(pw::config(&slots, rate, &routing))
+        {
+            self.running = Some(Running { slots, rate, routing });
+            return Ok(());
+        }
         self.start(slots, rate, routing)
     }
 
     fn service_active(&self) -> bool {
         self.systemd && run("systemctl", &["--user", "is-active", UNIT]).is_ok()
+    }
+}
+
+impl Drop for Linux {
+    fn drop(&mut self) {
+        // Without systemd nothing else would ever stop it.
+        self.kill_child();
     }
 }
 

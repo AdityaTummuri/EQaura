@@ -600,7 +600,17 @@ impl Core {
         }
     }
 
+    /// Leaving the page ends the hearing test, so the equalizer comes back.
+    fn check_test_page(&mut self) {
+        let away =
+            self.ui.upgrade().is_some_and(|ui| ui.global::<Model>().get_page() != Page::Hearing);
+        if away && self.test.is_some() {
+            self.hearing_cancel();
+        }
+    }
+
     fn check_show_request(&mut self) {
+        self.check_test_page();
         if std::fs::remove_file(self.store.path().join(SHOW_FILE)).is_ok()
             && let Some(ui) = self.ui.upgrade()
         {

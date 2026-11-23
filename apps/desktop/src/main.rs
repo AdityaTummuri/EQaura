@@ -6,6 +6,7 @@ use slint::ComponentHandle;
 use std::fs::File;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    log_panics();
     let dir = eq_store::default_dir();
     #[cfg(target_os = "macos")]
     if std::env::args().any(|a| a == eq_backend::mac::ENGINE_FLAG) {
@@ -22,7 +23,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::fs::write(dir.join(app::SHOW_FILE), b"")?;
         return Ok(());
     }
-    log_panics();
     let _ = slint::set_xdg_app_id("eqaura");
     let window = AppWindow::new()?;
     let demo = std::env::var_os("EQAURA_DEMO").is_some();

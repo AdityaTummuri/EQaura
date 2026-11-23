@@ -1011,6 +1011,10 @@ fn selftest(app: &AppWindow, win: &Rc<MinimalSoftwareWindow>, eq: &Rc<RefCell<Eq
             let l = log.clone();
             m.$on(move |$($a),*| l.borrow_mut().events.push(format!("{}:{}", $name, $fmt)));
         }};
+        ($on:ident, $name:expr) => {{
+            let l = log.clone();
+            m.$on(move || l.borrow_mut().events.push(format!("{}:", $name)));
+        }};
     }
     rec!(on_band_drag, "drag", |i, x, y| format!("{i},{x:.3},{y:.3}"));
     rec!(on_band_drag_end, "drag-end", |i| format!("{i}"));
@@ -1020,8 +1024,8 @@ fn selftest(app: &AppWindow, win: &Rc<MinimalSoftwareWindow>, eq: &Rc<RefCell<Eq
     rec!(on_band_set_on, "set-on", |i, v| format!("{i},{v}"));
     rec!(on_band_nudge, "nudge", |i, f, s| format!("{i},{f},{s}"));
     rec!(on_band_set_freq, "set-freq", |i, t| format!("{i},{t}"));
-    rec!(on_undo, "undo", || "");
-    rec!(on_redo, "redo", || "");
+    rec!(on_undo, "undo");
+    rec!(on_redo, "redo");
     rec!(on_set_comparing, "comparing", |v| format!("{v}"));
     rec!(on_slider_changed, "slider", |i, v| format!("{i},{v:.1}"));
     rec!(on_slider_released, "slider-end", |i| format!("{i}"));
