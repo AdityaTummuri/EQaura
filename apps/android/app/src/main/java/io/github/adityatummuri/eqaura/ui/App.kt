@@ -15,10 +15,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,10 +27,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -53,14 +55,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import io.github.adityatummuri.eqaura.AppModel
 import io.github.adityatummuri.eqaura.BuildConfig
@@ -98,13 +98,13 @@ internal fun AppRoot(model: AppModel) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun MainShell(model: AppModel) {
     var dest by rememberSaveable { mutableIntStateOf(Equalizer) }
     var sub by rememberSaveable { mutableIntStateOf(0) }
     val imeOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-    val bars = WindowInsets.systemBars.union(WindowInsets.displayCutout).asPaddingValues()
-    val dir = LocalLayoutDirection.current
+    val bars = WindowInsets.systemBars.union(WindowInsets.displayCutout)
 
     BackHandler(enabled = dest != Equalizer) {
         if (dest == More && sub != 0) sub = 0 else dest = Equalizer
@@ -120,18 +120,19 @@ private fun MainShell(model: AppModel) {
     }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        if (maxWidth >= 600.dp) {
+        val wide = maxWidth >= 600.dp
+        val compact = maxHeight < 480.dp
+        if (wide) {
+            val sides = WindowInsetsSides.End + WindowInsetsSides.Top
             Row(Modifier.fillMaxSize()) {
-                SideRail(dest, maxHeight < 480.dp, bars, dir) { go(it, 0) }
+                SideRail(dest, compact, Modifier.windowInsetsPadding(bars.only(WindowInsetsSides.Start + WindowInsetsSides.Vertical))) {
+                    go(it, 0)
+                }
                 Box(
                     Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .padding(
-                            top = bars.calculateTopPadding(),
-                            end = bars.calculateEndPadding(dir),
-                            bottom = if (imeOpen) 0.dp else bars.calculateBottomPadding(),
-                        )
+                        .windowInsetsPadding(bars.only(if (imeOpen) sides else sides + WindowInsetsSides.Bottom))
                         .imePadding(),
                 ) {
                     Screens(model, dest, sub, go)
@@ -144,11 +145,7 @@ private fun MainShell(model: AppModel) {
                     Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .padding(
-                            start = bars.calculateStartPadding(dir),
-                            top = bars.calculateTopPadding(),
-                            end = bars.calculateEndPadding(dir),
-                        )
+                        .windowInsetsPadding(bars.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top))
                         .imePadding(),
                 ) {
                     Screens(model, dest, sub, go)
@@ -204,23 +201,12 @@ private fun BottomBar(selected: Int, onSelect: (Int) -> Unit) {
 }
 
 @Composable
-private fun SideRail(
-    selected: Int,
-    compact: Boolean,
-    bars: PaddingValues,
-    dir: LayoutDirection,
-    onSelect: (Int) -> Unit,
-) {
+private fun SideRail(selected: Int, compact: Boolean, modifier: Modifier = Modifier, onSelect: (Int) -> Unit) {
     val c = EqTheme.colors
     Column(
-        Modifier
+        modifier
             .fillMaxHeight()
             .background(c.rail)
-            .padding(
-                start = bars.calculateStartPadding(dir),
-                top = bars.calculateTopPadding(),
-                bottom = bars.calculateBottomPadding(),
-            )
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 8.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

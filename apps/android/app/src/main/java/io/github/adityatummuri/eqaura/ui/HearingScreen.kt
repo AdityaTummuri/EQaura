@@ -11,6 +11,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -179,6 +181,7 @@ private fun KeepScreenOn() {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TestingPage(model: AppModel, modifier: Modifier = Modifier) {
     val c = EqTheme.colors
@@ -249,7 +252,7 @@ private fun TestingPage(model: AppModel, modifier: Modifier = Modifier) {
                     Modifier.fillMaxWidth().heightIn(min = 72.dp).testTag("hearing-no"),
                     icon = R.drawable.ic_close,
                 )
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
+                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
                     EqButton("Play again", { model.repeatTone() }, kind = ButtonKind.Ghost, icon = R.drawable.ic_play)
                     EqButton("Stop", { model.cancelHearing() }, Modifier.testTag("hearing-stop"), kind = ButtonKind.Ghost, icon = R.drawable.ic_stop)
                 }

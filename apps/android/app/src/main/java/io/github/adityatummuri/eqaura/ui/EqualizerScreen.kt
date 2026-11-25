@@ -271,6 +271,7 @@ private fun PresetChip(model: AppModel) {
 
 // ---- toolbar ----
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Toolbar(model: AppModel) {
     val c = EqTheme.colors
@@ -278,18 +279,19 @@ private fun Toolbar(model: AppModel) {
     val canRedo by model.observe { it.canRedo }
     val comparing by model.observe { it.comparing }
     val peak by model.observe { it.analysis.netPeakDb }
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         EqIconButton(R.drawable.ic_undo, "Undo", { model.undo() }, Modifier.testTag("undo"), enabled = canUndo)
         EqIconButton(R.drawable.ic_redo, "Redo", { model.redo() }, Modifier.testTag("redo"), enabled = canRedo)
         CompareButton(comparing, { model.setComparing(!comparing) }, Modifier.testTag("compare"))
-        Text(
-            text = "Peak ${gainText(peak)}",
-            style = EqType.small,
-            color = if (peak > 0.05) c.danger else c.text2,
-            fontWeight = if (peak > 0.05) FontWeight.SemiBold else FontWeight.Normal,
-            textAlign = TextAlign.End,
-            modifier = Modifier.weight(1f).padding(start = 8.dp),
-        )
+        Box(Modifier.weight(1f).heightIn(min = 48.dp).padding(start = 8.dp), contentAlignment = Alignment.CenterEnd) {
+            Text(
+                text = "Peak ${gainText(peak)}",
+                style = EqType.small,
+                color = if (peak > 0.05) c.danger else c.text2,
+                fontWeight = if (peak > 0.05) FontWeight.SemiBold else FontWeight.Normal,
+                textAlign = TextAlign.End,
+            )
+        }
     }
 }
 
