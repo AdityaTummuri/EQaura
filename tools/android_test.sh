@@ -33,9 +33,18 @@ adb shell am start -W -n "$app/.MainActivity"
 sleep 6
 # Presses a button by its text.
 press() {
-  adb shell uiautomator dump /sdcard/ui.xml >/dev/null
+  for _ in $(seq 8); do
+    if press_once "$1"; then return 0; fi
+    # Slow emulators show "isn't responding" for their own launcher.
+    press_once "Wait" >/dev/null 2>&1 || true
+    sleep 5
+  done
+  return 1
+}
+press_once() {
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 || return 1
   adb shell cat /sdcard/ui.xml > "$out/ui.xml"
-  python3 - "$out/ui.xml" "$1" > "$out/tap" <<'PY'
+  python3 - "$out/ui.xml" "$1" > "$out/tap" <<'PY' || return 1
 import re, sys
 text = open(sys.argv[1], encoding="utf-8").read()
 m = re.search(r'text="%s"[^>]*?bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"' % re.escape(sys.argv[2]), text)

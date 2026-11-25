@@ -348,6 +348,7 @@ class AppModel(private val context: Context, dir: File = context.filesDir) {
     }
 
     fun clearBands() {
+        if (now.profile.filters.isEmpty()) return
         seal()
         mutable.update { it.copy(selected = null, preset = null) }
         edit { p -> p.copy(filters = emptyList()) }

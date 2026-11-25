@@ -19,12 +19,18 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -262,7 +268,7 @@ private fun ChatItem(row: ChatRow, onApply: () -> Unit, onStop: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            CircularProgressIndicator(Modifier.size(22.dp), color = c.accent, strokeWidth = 2.5.dp)
+            Spinner()
             Text(
                 "Thinking about your request. Nothing changes until you apply a suggestion.",
                 style = EqType.small,
@@ -335,4 +341,16 @@ private fun Reply(row: ChatRow, onApply: () -> Unit) {
         }
         if (row.origin.isNotEmpty()) Text(row.origin, style = EqType.caption, color = c.text3)
     }
+}
+
+@Composable
+private fun Spinner() {
+    val transition = rememberInfiniteTransition(label = "busy")
+    val angle by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(1200, easing = LinearEasing), RepeatMode.Restart),
+        label = "angle",
+    )
+    Ico(R.drawable.ic_refresh, Modifier.rotate(angle), EqTheme.colors.busy, 22.dp)
 }

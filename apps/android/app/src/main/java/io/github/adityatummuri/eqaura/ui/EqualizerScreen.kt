@@ -334,7 +334,7 @@ private fun Severity.tone(): Tone = when (this) {
     Severity.Danger -> Tone.Danger
 }
 
-private fun roundQ(q: Double): Double = Math.round(q.coerceIn(0.05, 100.0) * 1000) / 1000.0
+private fun roundQ(q: Double): Double = maxOf(Math.round(q * 1000), 1L) / 1000.0
 
 @Composable
 private fun GraphCard(model: AppModel, fill: Boolean, modifier: Modifier = Modifier) {
@@ -700,11 +700,11 @@ private fun BandEditor(model: AppModel, i: Int, f: Filter) {
     val shape = RoundedCornerShape(12.dp)
 
     fun nudgeFreq(dir: Int) = model.changeBand(i, "nf $i") {
-        it.copy(freqHz = roundFreq((it.freqHz * 2.0.pow(dir / 12.0)).coerceIn(10.0, 24000.0)))
+        it.copy(freqHz = roundFreq(it.freqHz * 2.0.pow(dir / 12.0)))
     }
 
     fun nudgeGain(dir: Int) = model.changeBand(i, "ng $i") {
-        it.copy(gainDb = roundGain((it.gainDb + dir * 0.5).coerceIn(-60.0, 60.0)))
+        it.copy(gainDb = roundGain(it.gainDb + dir * 0.5))
     }
 
     fun nudgeQ(dir: Int) = model.changeBand(i, "nq $i") { it.copy(q = roundQ(it.q * 1.1.pow(dir))) }
@@ -839,12 +839,14 @@ private fun BandEditor(model: AppModel, i: Int, f: Filter) {
                 val v = model.number(text)
                 if (v == null || !v.isFinite()) {
                     model.toast("That is not a number", Tone.Warning)
+                } else if (field != Field.Gain && v <= 0) {
+                    model.toast("It must be more than zero", Tone.Warning)
                 } else {
                     model.seal()
                     model.changeBand(i) {
                         when (field) {
-                            Field.Freq -> it.copy(freqHz = roundFreq(v.coerceIn(10.0, 24000.0)))
-                            Field.Gain -> it.copy(gainDb = roundGain(v.coerceIn(-60.0, 60.0)))
+                            Field.Freq -> it.copy(freqHz = roundFreq(v))
+                            Field.Gain -> it.copy(gainDb = roundGain(v))
                             Field.Q -> it.copy(q = roundQ(v))
                         }
                     }
@@ -882,8 +884,8 @@ private fun PreampCard(model: AppModel) {
                     label = "Preamp",
                     valueText = gainText(preamp.db),
                     onType = { typing = true },
-                    onMinus = { model.setPreamp((preamp.db - 0.5).coerceIn(-30.0, 12.0)) },
-                    onPlus = { model.setPreamp((preamp.db + 0.5).coerceIn(-30.0, 12.0)) },
+                    onMinus = { model.setPreamp(preamp.db - 0.5) },
+                    onPlus = { model.setPreamp(preamp.db + 0.5) },
                 ) { m ->
                     EqSlider(
                         value = preamp.db.toFloat().coerceIn(-30f, 12f),
@@ -904,7 +906,7 @@ private fun PreampCard(model: AppModel) {
             title = "Preamp",
             initial = plain(preamp.db, 1),
             action = "Set",
-            hint = "From -30 to 12 dB. For example -6",
+            hint = "For example -6",
             onDismiss = { typing = false },
             onDone = { text ->
                 val v = model.number(text)
@@ -912,7 +914,7 @@ private fun PreampCard(model: AppModel) {
                     model.toast("That is not a number", Tone.Warning)
                 } else {
                     model.seal()
-                    model.setPreamp(v.coerceIn(-30.0, 12.0))
+                    model.setPreamp(v)
                     model.seal()
                 }
                 typing = false

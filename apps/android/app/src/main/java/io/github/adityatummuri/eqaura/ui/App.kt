@@ -136,7 +136,11 @@ private fun MainShell(model: AppModel) {
                         .imePadding(),
                 ) {
                     Screens(model, dest, sub, go)
-                    ToastHost(model, Modifier.align(Alignment.BottomCenter))
+                    ToastHost(
+                        model,
+                        // Never on top of the assistant's input.
+                        Modifier.align(Alignment.BottomCenter).padding(bottom = if (dest == Assistant) 72.dp else 0.dp),
+                    )
                 }
             }
         } else {
@@ -149,7 +153,11 @@ private fun MainShell(model: AppModel) {
                         .imePadding(),
                 ) {
                     Screens(model, dest, sub, go)
-                    ToastHost(model, Modifier.align(Alignment.BottomCenter))
+                    ToastHost(
+                        model,
+                        // Never on top of the assistant's input.
+                        Modifier.align(Alignment.BottomCenter).padding(bottom = if (dest == Assistant) 72.dp else 0.dp),
+                    )
                 }
                 if (!imeOpen) BottomBar(dest) { go(it, 0) }
             }
