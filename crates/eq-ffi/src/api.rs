@@ -417,7 +417,13 @@ mod tests {
         assert_eq!(on["left"].as_array().unwrap().len(), n);
         assert_eq!(on["preamp_db"], flat["preamp_db"]);
         assert!(flat["left"].as_array().unwrap().iter().all(|g| g == 0.0));
-        assert!(call("engine", &json!({ "profile": profile(), "block": 1000, "rate": 48000, "flat": false }).to_string()).contains("error"));
+        assert!(
+            call(
+                "engine",
+                &json!({ "profile": profile(), "block": 1000, "rate": 48000, "flat": false }).to_string()
+            )
+            .contains("error")
+        );
     }
 
     #[test]
