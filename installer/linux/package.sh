@@ -27,8 +27,8 @@ Architecture: amd64
 Maintainer: AdityaTummuri <AdityaTummuri@users.noreply.github.com>
 Section: sound
 Priority: optional
-Depends: libc6, libasound2t64 | libasound2, libfontconfig1, pipewire, pipewire-bin, wireplumber
-Recommends: libxkbcommon0, libxkbcommon-x11-0, xdg-desktop-portal
+Depends: libc6, libasound2t64 | libasound2, libfontconfig1, libxkbcommon0, libxkbcommon-x11-0, libx11-6, libx11-xcb1, libxcursor1, libxi6, pipewire, pipewire-bin, wireplumber
+Recommends: xdg-desktop-portal
 Homepage: https://github.com/AdityaTummuri/EQaura
 Description: System-wide equalizer
  Shape the sound of everything you play, with headphone correction,
@@ -47,7 +47,11 @@ Release: 1
 Summary: System-wide equalizer
 License: MIT
 URL: https://github.com/AdityaTummuri/EQaura
-Requires: pipewire, pipewire-utils, wireplumber, alsa-lib, fontconfig
+# Files and library names are the same on every distribution, package names are not.
+Requires: pipewire, wireplumber, /usr/bin/pw-cli
+Requires: libasound.so.2()(64bit), libfontconfig.so.1()(64bit)
+Requires: libxkbcommon.so.0()(64bit), libxkbcommon-x11.so.0()(64bit)
+Requires: libX11.so.6()(64bit), libX11-xcb.so.1()(64bit), libXcursor.so.1()(64bit), libXi.so.6()(64bit)
 AutoReqProv: no
 %description
 Shape the sound of everything you play, with headphone correction, a hearing

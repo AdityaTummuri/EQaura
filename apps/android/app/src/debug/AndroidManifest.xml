@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The tests measure the processed sound. The released app never records. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+</manifest>

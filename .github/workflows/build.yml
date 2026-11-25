@@ -104,11 +104,6 @@ jobs:
         run: |
           cargo build --release --locked -p eqaura
           installer/linux/package.sh ${{ steps.v.outputs.version }}
-      - name: Memory
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get install -y xvfb
-          bash tools/memory_test.sh
 
       - name: Build for macOS
         if: runner.os == 'macOS'
@@ -141,10 +136,16 @@ jobs:
       - name: Install and remove (Linux)
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get install -y ./dist/EQaura-*.deb desktop-file-utils
+          sudo apt-get install -y --no-install-recommends ./dist/EQaura-*.deb
+          sudo apt-get install -y desktop-file-utils xvfb
           /usr/bin/eqaura --version
+          bash tools/memory_test.sh /usr/bin/eqaura
           desktop-file-validate /usr/share/applications/eqaura.desktop
-          rpm -qlp dist/EQaura-*.rpm
+          for image in fedora:latest opensuse/tumbleweed:latest; do
+            docker run --rm -v "$PWD/dist:/dist:ro" $image sh -c '
+              if command -v dnf >/dev/null; then dnf install -y -q /dist/*.rpm; else zypper -n --no-gpg-checks install /dist/*.rpm; fi >/tmp/log 2>&1 || { tail -30 /tmp/log; exit 1; }
+              /usr/bin/eqaura --version'
+          done
           mkdir portable && tar -C portable -xf dist/EQaura-*.tar.xz && portable/bin/eqaura --version
           sudo apt-get remove -y eqaura
           test ! -e /usr/bin/eqaura
