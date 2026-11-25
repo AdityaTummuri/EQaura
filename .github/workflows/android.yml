@@ -1,0 +1,146 @@
+name: android
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/android/**"
+      - "crates/eq-ffi/**"
+      - "crates/eq-core/**"
+      - "crates/eq-ai/**"
+      - "tools/android*"
+      - "Cargo.*"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: never
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-ndk
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.14.3
+
+      - name: Rust tests and lints
+        run: |
+          cargo test --locked -p eq-ffi
+          cargo clippy --locked -p eq-ffi --all-targets -- -D warnings
+
+      - name: Rust core for every processor
+        run: |
+          # This NDK aligns libraries to 16 KB pages, which new phones need.
+          export ANDROID_NDK_HOME=$(ls -d "$ANDROID_HOME"/ndk/29.* | tail -1)
+          cargo ndk --platform 28 -t arm64-v8a -t armeabi-v7a -t x86_64 \
+            -o apps/android/app/src/main/jniLibs build --release --locked -p eq-ffi
+          ls -l apps/android/app/src/main/jniLibs/*
+          python3 tools/third_party.py apps/android/app/src/main/assets/THIRD-PARTY-LICENSES.txt --android
+
+      - name: Signing key
+        env:
+          KEY: ${{ secrets.ANDROID_KEYSTORE }}
+        run: |
+          if [ -n "$KEY" ]; then
+            echo "$KEY" | base64 -d > "$RUNNER_TEMP/release.p12"
+            echo "EQAURA_KEYSTORE=$RUNNER_TEMP/release.p12" >> "$GITHUB_ENV"
+            echo "EQAURA_KEY_ALIAS=eqaura" >> "$GITHUB_ENV"
+          fi
+
+      - name: App
+        working-directory: apps/android
+        env:
+          EQAURA_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: gradle --continue assembleRelease assembleDebug assembleDebugAndroidTest lintRelease
+
+      - name: Reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: apps/android/app/build/reports
+          if-no-files-found: ignore
+
+      - name: Sizes and checksums
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          mkdir -p dist
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            cp apps/android/app/build/outputs/apk/release/app-$abi-release.apk "dist/EQaura-$version-android-$abi.apk"
+          done
+          cd dist
+          python3 ../tools/check_size.py *.apk
+          for f in *.apk; do sha256sum "$f" > "$f.sha256"; done
+          apksigner=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          for f in *.apk; do "$apksigner" verify --print-certs "$f" | head -1; done
+          zipalign=$(ls "$ANDROID_HOME"/build-tools/*/zipalign | sort -V | tail -1)
+          for f in *.apk; do "$zipalign" -c -P 16 4 "$f"; done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EQaura-Android
+          path: dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-tests
+          retention-days: 3
+          path: |
+            apps/android/app/build/outputs/apk/debug/app-x86_64-debug.apk
+            apps/android/app/build/outputs/apk/androidTest/debug/*.apk
+
+  phone:
+    # Installs the app on virtual phones, measures its sound and uses every page.
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [28, 31, 34, 36]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: apk
+          merge-multiple: true
+      - name: Allow hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: bash tools/android_test.sh apk out
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-${{ matrix.api }}
+          path: out
+          if-no-files-found: ignore
