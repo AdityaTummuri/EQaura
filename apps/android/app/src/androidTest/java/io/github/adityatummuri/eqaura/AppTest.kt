@@ -177,7 +177,8 @@ class AppTest {
     fun headphones() {
         tap("nav-headphones")
         ui.onNodeWithTag("headphone-search").performTextInput("hd 600")
-        // The first row changes once the search has run.
+        // The search waits for a pause in typing, then runs on another thread.
+        ui.mainClock.advanceTimeBy(1000)
         Thread.sleep(1500)
         ui.waitUntil("results", 10_000) {
             ui.onAllNodes(hasTestTag("headphone-row-0")).fetchSemanticsNodes().isNotEmpty()

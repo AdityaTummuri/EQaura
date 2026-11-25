@@ -12,6 +12,8 @@ finish() {
   grep -E 'EQaura *: measured|: measured' "$out/logcat.txt" | sed 's/.*EQaura *: //' || true
 }
 trap finish EXIT
+# Dialogs of other slow apps must not cover ours.
+adb shell settings put global hide_error_dialogs 1
 adb logcat -G 8M
 adb logcat -c
 

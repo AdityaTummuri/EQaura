@@ -261,9 +261,14 @@ private fun PresetChip(model: AppModel) {
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Ico(R.drawable.ic_presets, tint = c.text2, size = 20.dp)
-        Text(name, style = EqType.bodyStrong, color = c.text, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-        if (preset != null && dirty) Badge("edited", tone = Tone.Warning)
-        Spacer(Modifier.weight(1f))
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(name, style = EqType.bodyStrong, color = c.text, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+            if (preset != null && dirty) Badge("edited", tone = Tone.Warning)
+        }
         Ico(R.drawable.ic_chevron_down, tint = c.text2, size = 20.dp)
     }
     if (open) PresetSheet(model) { open = false }
