@@ -17,7 +17,7 @@ Drag a curve, pick your headphones, or just say what you want to hear.
 
 <img src="docs/media/equalizer.gif" width="900" alt="Dragging bands on the EQaura curve editor">
 
-[Download](#download) · [Features](#features) · [How it works](#how-it-works) · [Build it](#build-from-source) · [Help](#when-something-does-not-work)
+[Download](#download) · [Features](#features) · [Compatibility](#compatible-with) · [How it works](#how-it-works) · [Build it](#build-from-source) · [Help](#when-something-does-not-work)
 
 </div>
 
@@ -50,9 +50,22 @@ Every suggestion is shown first. Nothing changes until you press Apply, and one 
 | <img src="docs/media/equalizer-light.png" alt="Equalizer, light theme"> | <img src="docs/media/assistant-dark.png" alt="Assistant, dark theme"> |
 | <img src="docs/media/presets-dark.png" alt="Presets, dark theme"> | <img src="docs/media/system-light.png" alt="System page, light theme"> |
 
+## Compatible with
+
+| System | Versions | Processors |
+| --- | --- | --- |
+| **Windows** | 10 and 11 | 64-bit Intel and AMD |
+| **macOS** | 14.2 or newer | Apple silicon and Intel |
+| **Linux** (Ubuntu, Debian, Fedora, openSUSE and others) | PipeWire 1.0 or newer | 64-bit Intel and AMD (ready-made packages) |
+| **Android** | 9 or newer | `arm64-v8a`, `armeabi-v7a`, `x86_64` |
+
+**Kinds of output:** speakers, wired headphones, USB audio, Bluetooth, and TV or HDMI outputs.
+
+**What can get past it:** on Windows, players using ASIO or WASAPI exclusive mode skip Equalizer APO. On Android, some phones or apps ignore the equalizer; see [help](#when-something-does-not-work).
+
 ## Download
 
-Get the newest build from the [Releases page](https://github.com/AdityaTummuri/EQaura/releases). If there is no release yet, open the latest green run under [Actions](https://github.com/AdityaTummuri/EQaura/actions/workflows/build.yml) and take the file for your system from *Artifacts*, or [build it yourself](#build-from-source).
+Get the newest build from the [Releases page](https://github.com/AdityaTummuri/EQaura/releases). If there is no release yet, sign in to GitHub, open the latest green run of [build](https://github.com/AdityaTummuri/EQaura/actions/workflows/build.yml) (computers) or [android](https://github.com/AdityaTummuri/EQaura/actions/workflows/android.yml) (phones) and take the file from *Artifacts*, or [build it yourself](#build-from-source).
 
 <details open>
 <summary><b>Windows 10 and 11 (64-bit)</b></summary>
@@ -89,11 +102,13 @@ The equalizer runs as a small user service inside PipeWire and keeps working whe
 <details>
 <summary><b>Android 9 or newer</b></summary>
 
-1. Install the `.apk` for your processor: `arm64-v8a` for almost every phone, `armeabi-v7a` for old ones. Android asks you to allow installing from your browser or file manager. The Android builds are under [android](https://github.com/AdityaTummuri/EQaura/actions/workflows/android.yml) in Actions until there is a release.
+1. Install the `.apk` for your processor: `arm64-v8a` for almost every phone, `armeabi-v7a` for old ones. Android asks you to allow installing from your browser or file manager.
 2. Open EQaura and choose *Turn on*. No root is needed.
 3. If nothing changes, switch *Settings › Coverage* to *Per app*, and turn off other equalizers such as the phone's own or Dolby.
 
 A small notification keeps the equalizer running. It comes back by itself after a restart.
+
+Android only updates an app with a file signed by the same key. To switch between your own build and one from this page, uninstall first; this removes your settings, so export presets you want to keep.
 </details>
 
 ## How it works
@@ -148,6 +163,7 @@ EQAURA_DEMO=1 EQAURA_HOME=/tmp/eqaura cargo run --release -p eqaura
 The Android app is in `apps/android`. It needs the Android SDK and NDK, [cargo-ndk](https://github.com/bbqsrc/cargo-ndk), JDK 17 and Gradle 8.14:
 
 ```sh
+rustup target add aarch64-linux-android
 cargo ndk --platform 28 -t arm64-v8a -o apps/android/app/src/main/jniLibs build --release -p eq-ffi
 cd apps/android && gradle assembleDebug
 ```
