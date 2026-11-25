@@ -10,7 +10,6 @@ mod ui {
 mod about;
 pub mod app;
 mod graph;
-mod presets;
 mod tone;
 pub mod worker;
 

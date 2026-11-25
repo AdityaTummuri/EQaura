@@ -42,7 +42,7 @@ VIAddVersionKey "LegalCopyright" "MIT license"
 
 Function .onInit
   ${IfNot} ${RunningX64}
-    MessageBox MB_ICONSTOP "EQaura needs 64-bit Windows."
+    MessageBox MB_ICONSTOP "EQaura needs 64-bit Windows." /SD IDOK
     Abort
   ${EndIf}
   SetRegView 64
@@ -79,7 +79,7 @@ Section "EQaura"
     ExecWait '"$PLUGINSDIR\EqualizerAPO64.exe" /S' $2
     ReadRegStr $0 HKLM "SOFTWARE\EqualizerAPO" "InstallPath"
     ${If} $0 == ""
-      MessageBox MB_ICONEXCLAMATION "Equalizer APO could not be installed (code $2). EQaura's System page explains how to add it later."
+      MessageBox MB_ICONEXCLAMATION "Equalizer APO could not be installed (code $2). EQaura's System page explains how to add it later." /SD IDOK
     ${EndIf}
   ${EndIf}
 

@@ -32,4 +32,4 @@ EOF
 codesign --force --sign - --identifier io.github.adityatummuri.eqaura "$app"
 codesign --verify --strict "$app"
 ln -s /Applications dist/macos/Applications
-hdiutil create -quiet -volname EQaura -srcfolder dist/macos -ov -format UDZO "dist/EQaura-$version-macos.dmg"
+hdiutil create -quiet -volname EQaura -srcfolder dist/macos -ov -format ULMO "dist/EQaura-$version-macos.dmg"

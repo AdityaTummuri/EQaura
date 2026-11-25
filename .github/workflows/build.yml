@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
+    # Android has its own workflow.
+    paths-ignore: ["apps/android/**", "crates/eq-ffi/**", "tools/android*", ".github/workflows/android.yml", "**.md", "docs/**"]
   workflow_dispatch:
 
 permissions:
@@ -34,13 +36,14 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libasound2-dev libfontconfig1-dev libxkbcommon-dev
       - name: Formatting
+        id: fmt
         if: runner.os == 'Linux'
         run: |
           cargo fmt --all
           git diff > fmt.patch
-          if [ -s fmt.patch ]; then echo "::warning::Not formatted. Apply the fmt-patch artifact."; fi
+          if [ -s fmt.patch ]; then echo "::error::Not formatted. Apply the fmt-patch artifact."; echo bad=1 >> "$GITHUB_OUTPUT"; fi
       - uses: actions/upload-artifact@v4
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && steps.fmt.outputs.bad
         with:
           name: fmt-patch
           path: fmt.patch
@@ -56,6 +59,9 @@ jobs:
         run: |
           cargo clippy --workspace --all-targets --locked --keep-going 2>&1 | tee clippy.log
           ! grep -qE '^(warning|error)' clippy.log
+      - name: Formatting result
+        if: ${{ !cancelled() && steps.fmt.outputs.bad }}
+        run: exit 1
 
   pipewire:
     # Loads the generated settings into a real PipeWire. No sound hardware is
@@ -98,6 +104,11 @@ jobs:
         run: |
           cargo build --release --locked -p eqaura
           installer/linux/package.sh ${{ steps.v.outputs.version }}
+      - name: Memory
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y xvfb
+          bash tools/memory_test.sh
 
       - name: Build for macOS
         if: runner.os == 'macOS'
@@ -127,10 +138,38 @@ jobs:
           choco install nsis -y --no-progress
           "/c/Program Files (x86)/NSIS/makensis.exe" -V2 -DVERSION=${{ steps.v.outputs.version }} installer/windows/eqaura.nsi
 
+      - name: Install and remove (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y ./dist/EQaura-*.deb desktop-file-utils
+          /usr/bin/eqaura --version
+          desktop-file-validate /usr/share/applications/eqaura.desktop
+          rpm -qlp dist/EQaura-*.rpm
+          mkdir portable && tar -C portable -xf dist/EQaura-*.tar.xz && portable/bin/eqaura --version
+          sudo apt-get remove -y eqaura
+          test ! -e /usr/bin/eqaura
+      - name: Install (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          hdiutil attach -quiet -mountpoint "$RUNNER_TEMP/image" dist/EQaura-*.dmg
+          cp -R "$RUNNER_TEMP/image/EQaura.app" "$RUNNER_TEMP/"
+          hdiutil detach -quiet "$RUNNER_TEMP/image"
+          codesign --verify --deep --strict "$RUNNER_TEMP/EQaura.app"
+          lipo -archs "$RUNNER_TEMP/EQaura.app/Contents/MacOS/EQaura" | grep arm64 | grep x86_64
+          "$RUNNER_TEMP/EQaura.app/Contents/MacOS/EQaura" --version
+          arch -x86_64 "$RUNNER_TEMP/EQaura.app/Contents/MacOS/EQaura" --version
+      - name: Install, use and remove (Windows)
+        if: runner.os == 'Windows'
+        timeout-minutes: 10
+        shell: pwsh
+        run: tools/windows_test.ps1
+
       - name: Sizes and checksums
         shell: bash
         run: |
           cd dist && ls -l
+          PY=$(command -v python3 || command -v python)
+          "$PY" ../tools/check_size.py EQaura-*
           for f in EQaura-*; do (sha256sum "$f" 2>/dev/null || shasum -a 256 "$f") > "$f.sha256"; done
       - uses: actions/upload-artifact@v4
         with:
@@ -140,9 +179,14 @@ jobs:
             dist/EqualizerAPO-src-*
           if-no-files-found: error
 
+  android:
+    if: startsWith(github.ref, 'refs/tags/v')
+    uses: ./.github/workflows/android.yml
+    secrets: inherit
+
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: package
+    needs: [package, android]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -150,6 +194,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: out
+          pattern: EQaura-*
           merge-multiple: true
       - env:
           GH_TOKEN: ${{ github.token }}

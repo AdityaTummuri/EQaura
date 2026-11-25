@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds .deb, .rpm and a portable .tar.gz from target/release/eqaura.
+# Builds .deb, .rpm and a portable .tar.xz from target/release/eqaura.
 # Needs: dpkg-deb, rpmbuild. Usage: installer/linux/package.sh 0.1.0
 set -euo pipefail
 version="$1"
@@ -14,7 +14,7 @@ install -Dm644 LICENSE "$root/usr/share/doc/eqaura/LICENSE"
 install -Dm644 dist/THIRD-PARTY-LICENSES.txt "$root/usr/share/doc/eqaura/THIRD-PARTY-LICENSES.txt"
 
 # Portable archive
-tar -C "$root/usr" -czf "dist/EQaura-$version-linux-x86_64.tar.gz" bin share
+XZ_OPT=-9 tar -C "$root/usr" -cJf "dist/EQaura-$version-linux-x86_64.tar.xz" bin share
 
 # Debian and Ubuntu
 deb="$PWD/dist/linux/deb"
@@ -34,7 +34,7 @@ Description: System-wide equalizer
  Shape the sound of everything you play, with headphone correction,
  a hearing test and plain-English tuning.
 EOF
-dpkg-deb --root-owner-group --build "$deb" "dist/EQaura-$version-linux-amd64.deb"
+dpkg-deb -Zxz -z9 --root-owner-group --build "$deb" "dist/EQaura-$version-linux-amd64.deb"
 
 # Fedora and openSUSE
 if command -v rpmbuild >/dev/null; then
@@ -61,6 +61,6 @@ cp -a $root/. %{buildroot}/
 /usr/share/icons/hicolor/256x256/apps/eqaura.png
 %doc /usr/share/doc/eqaura
 EOF
-  rpmbuild --define "_topdir $top" --define "_build_id_links none" -bb "$top/SPECS/eqaura.spec"
+  rpmbuild --define "_topdir $top" --define "_build_id_links none" --define "_binary_payload w9.xzdio" -bb "$top/SPECS/eqaura.spec"
   cp "$top"/RPMS/x86_64/*.rpm "dist/EQaura-$version-linux-x86_64.rpm"
 fi

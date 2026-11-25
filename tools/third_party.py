@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Writes THIRD-PARTY-LICENSES.txt from the crates the apps really use, and
-fails when a crate's license is not on the allowed list."""
+fails when a crate's license is not on the allowed list.
+
+Usage: third_party.py [target] [--android]"""
 import json
 import pathlib
 import re
@@ -12,6 +14,12 @@ ALLOWED = {
     "Unicode-DFS-2016", "MPL-2.0", "0BSD", "CC0-1.0", "Unlicense", "BSL-1.0", "MIT-0",
     "CDLA-Permissive-2.0", "LicenseRef-Slint-Royalty-free-2.0", "Apache-2.0 WITH LLVM-exception",
 }
+
+
+ANDROID = """Jetpack Compose and the AndroidX libraries, Copyright The Android Open Source Project,
+and Kotlin, kotlinx.coroutines and kotlinx.serialization, Copyright JetBrains s.r.o.,
+are used under the Apache License 2.0. https://www.apache.org/licenses/LICENSE-2.0
+"""
 
 
 def allowed(expr: str) -> bool:
@@ -56,7 +64,10 @@ def main() -> None:
     packages = {p["id"]: p for p in meta["packages"]}
     nodes = {n["id"]: n for n in meta["resolve"]["nodes"]}
     # Only what ends up in the programs: follow normal dependencies.
-    todo, used = list(meta["workspace_members"]), set()
+    android = "--android" in sys.argv
+    roots = [m for m in meta["workspace_members"] if packages[m]["name"] == "eq-ffi"] if android \
+        else [m for m in meta["workspace_members"] if packages[m]["name"] != "eq-ffi"]
+    todo, used = list(roots), set()
     while todo:
         i = todo.pop()
         if i in used:
@@ -82,13 +93,14 @@ def main() -> None:
         groups.setdefault(text, []).append(f'{p["name"]} {p["version"]} ({lic})')
     out = [
         "EQaura uses the open source software below. Thank you to everyone who made it.\n",
-        "Slint is used under the Slint Royalty-free License 2.0. https://slint.dev\n",
+        ANDROID if android else "Slint is used under the Slint Royalty-free License 2.0. https://slint.dev\n",
         "AutoEq (headphone corrections)\n\n"
         + (root / "crates/eq-core/data/AUTOEQ-LICENSE").read_text().strip() + "\n",
     ]
     for text, names in sorted(groups.items(), key=lambda g: g[1][0]):
         out.append("-" * 72 + "\n" + "\n".join(names) + "\n\n" + text + "\n")
-    target = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else root / "dist/THIRD-PARTY-LICENSES.txt"
+    paths = [a for a in sys.argv[1:] if not a.startswith("--")]
+    target = pathlib.Path(paths[0]) if paths else root / "dist/THIRD-PARTY-LICENSES.txt"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text("\n".join(out), encoding="utf-8")
     print(f"{sum(map(len, groups.values()))} crates listed in {target}")

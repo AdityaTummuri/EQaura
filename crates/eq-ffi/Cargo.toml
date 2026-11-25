@@ -1,0 +1,17 @@
+[package]
+name = "eq-ffi"
+description = "Connects the EQaura core to the Android app"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "eqaura"
+crate-type = ["lib", "cdylib"]
+
+[dependencies]
+eq-core.workspace = true
+eq-ai.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+jni = { version = "0.21", default-features = false }

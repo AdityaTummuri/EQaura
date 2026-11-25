@@ -2,7 +2,7 @@
 
 use crate::ui::*;
 use crate::worker::{Command, Emit, Engine, Event};
-use crate::{about, graph, presets, tone};
+use crate::{about, graph, tone};
 use eq_ai::{Config, Context, Http, Provider};
 use eq_backend::{Check, Device, Level, State};
 use eq_core::change::{self, Change};
@@ -10,7 +10,7 @@ use eq_core::filter::{Channel, Filter, Kind};
 use eq_core::hearing::{self, Test, Threshold};
 use eq_core::history::History;
 use eq_core::profile::{Chain, Correction, HearingLayer, Preamp, Profile};
-use eq_core::{autoeq, preset, rules, sliders, text, warning};
+use eq_core::{autoeq, builtin, preset, rules, sliders, text, warning};
 use eq_store::{AiChoice, DeviceState, Devices, Settings, Store, Theme, keys};
 use slint::{ComponentHandle, Model as _, ModelRc, SharedString, Timer, TimerMode, VecModel, Weak};
 use std::cell::RefCell;
@@ -211,7 +211,7 @@ pub fn start_with(ui: &AppWindow, store: Store, engine: Box<dyn Engine>) {
     } else {
         graph::Plot::new(800.0, 300.0, RATE)
     };
-    let builtin = presets::builtin();
+    let builtin = builtin::builtin();
     let mut core = Core {
         ui: ui.as_weak(),
         store,
@@ -758,7 +758,7 @@ impl Core {
     // ---- presets ----
 
     fn load_presets(&mut self) {
-        self.presets = presets::builtin();
+        self.presets = builtin::builtin();
         self.builtin = self.presets.len();
         self.presets.extend(self.store.presets());
         self.refresh_presets();
@@ -808,7 +808,7 @@ impl Core {
         if name.is_empty() {
             return;
         }
-        if presets::builtin().iter().any(|p| p.name == name) {
+        if builtin::builtin().iter().any(|p| p.name == name) {
             self.toast(Tone::Warning, "A built-in preset already has this name", false);
             return;
         }
@@ -1618,7 +1618,7 @@ fn connect(ui: &AppWindow) {
     m.on_preset_save(|| with(Core::preset_save));
     m.on_preset_save_as(|| {
         with(|c| {
-            let name = c.preset.clone().filter(|n| !presets::builtin().iter().any(|p| p.name == *n));
+            let name = c.preset.clone().filter(|n| !builtin::builtin().iter().any(|p| p.name == *n));
             c.ask_name(NameFor::SaveAs, "Save preset", &name.unwrap_or_default());
         });
     });

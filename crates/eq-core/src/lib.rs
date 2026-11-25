@@ -2,6 +2,7 @@
 //! an audio engine comes from this crate, so what you see is what you hear.
 
 pub mod autoeq;
+pub mod builtin;
 pub mod change;
 pub mod curve;
 pub mod dsp;

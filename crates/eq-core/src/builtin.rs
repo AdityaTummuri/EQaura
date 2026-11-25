@@ -1,7 +1,7 @@
-//! Presets that come with the app.
+//! Presets that come with every EQaura app.
 
-use eq_core::filter::{Filter, Kind};
-use eq_core::profile::Profile;
+use crate::filter::{Filter, Kind};
+use crate::profile::Profile;
 
 type Row = (Kind, f64, f64, f64);
 use Kind::{HighPass as HP, HighShelf as HS, LowShelf as LS, Peaking as PK};
